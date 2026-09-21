@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import 'tailwindcss';
+
+:root {
+  font-family: 'DM Sans', sans-serif;
+  color: #102a43;
+  background: #f7f5ef;
+  font-synthesis: none;
+  --nexus-navy: #102a43;
+  --nexus-ink: #243b53;
+  --nexus-muted: #627d98;
+  --nexus-paper: #f7f5ef;
+  --nexus-mist: #e8f1f5;
+  --nexus-line: #d9e2ec;
+  --nexus-coral: #e76f51;
+  --nexus-gold: #f2cc70;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+button, a { -webkit-tap-highlight-color: transparent; }
+.font-display { font-family: 'Space Grotesk', sans-serif; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-rise { animation: rise 500ms ease-out both; }
+.animate-rise-delayed { animation: rise 600ms 100ms ease-out both; }
+
+.input {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  border: 1px solid var(--nexus-line);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  outline: none;
+}
+
+.input:focus { border-color: var(--nexus-coral); }

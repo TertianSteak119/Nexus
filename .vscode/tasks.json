@@ -1,0 +1,392 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Nexus - instalar dependencias",
+			"type": "shell",
+			"command": "C:\\Program Files\\nodejs\\npm.cmd",
+			"args": [
+				"install"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Nexus - instalar dependencias con PATH",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/s",
+				"/c",
+				"set \"PATH=C:\\Program Files\\nodejs;%PATH%\" && \"C:\\Program Files\\nodejs\\npm.cmd\" install"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Nexus - reparar instalación Node",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm install"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Nexus - typecheck",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run typecheck"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "Nexus - lint",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run lint"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$eslint-stylish"
+			]
+		},
+		{
+			"label": "Nexus - build",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run build"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "Nexus - lint final",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run lint"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$eslint-stylish"
+			]
+		},
+		{
+			"label": "Nexus - build final",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run build"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "Nexus - comprobar Supabase CLI",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"where supabase && supabase --version"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Nexus - buscar Supabase CLI",
+			"type": "shell",
+			"command": "winget",
+			"args": [
+				"search",
+				"supabase",
+				"--accept-source-agreements"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Nexus - servidor de desarrollo",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run dev -- --host 0.0.0.0"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Nexus - comprobar servidor",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"curl.exe -I http://localhost:5173"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Nexus - comprobar MIME Vite",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"curl.exe -s -D - http://localhost:5173/src/main.tsx -o NUL"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Nexus - comprobar favicon",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"curl.exe -s -D - http://localhost:5173/favicon.svg -o NUL"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Nexus - typecheck fase 2 base",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run typecheck"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "Nexus - typecheck fase 2",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run typecheck"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "Nexus - lint fase 2",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run lint"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$eslint-stylish"
+			]
+		},
+		{
+			"label": "Nexus - lint fase 2 final",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run lint"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$eslint-stylish"
+			]
+		},
+		{
+			"label": "Nexus - build fase 2",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run build"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "Nexus - typecheck fase 2 final",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run typecheck"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "Nexus - lint fase 2 limpio",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run lint"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$eslint-stylish"
+			]
+		},
+		{
+			"label": "Nexus - typecheck fase 2 corregido",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run typecheck"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "Nexus - typecheck fase 2 completo",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run typecheck"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "Nexus - lint fase 2 completo",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run lint"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$eslint-stylish"
+			]
+		},
+		{
+			"label": "Nexus - validar fecha editable",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run typecheck"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "Nexus - lint fecha editable",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run lint"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$eslint-stylish"
+			]
+		},
+		{
+			"label": "Nexus - typecheck fase 2 checklist",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run typecheck"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "Nexus - lint fase 2 checklist",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run lint"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$eslint-stylish"
+			]
+		},
+		{
+			"label": "Nexus - build fase 2 checklist",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run build"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		}
+	]
+}
