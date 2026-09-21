@@ -47,7 +47,7 @@ export function AuthPage() {
       return
     }
     if (!supabase) {
-      setError('Configura VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY para activar la cuenta.')
+      setError('Falta la conexión con Supabase. Crea un archivo .env en la raíz, agrega VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY, y reinicia npm run dev.')
       return
     }
     setSubmitting(true)

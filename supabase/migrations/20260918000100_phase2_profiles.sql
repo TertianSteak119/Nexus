@@ -112,6 +112,19 @@ create index profiles_birth_date_idx on public.profiles (birth_date);
 create index profiles_username_idx on public.profiles (username);
 create index grade_verifications_status_idx on public.grade_verifications (status);
 
+insert into public.interests (name) values
+  ('Programación'),
+  ('Arte'),
+  ('Música'),
+  ('Lectura'),
+  ('Deportes'),
+  ('Videojuegos'),
+  ('Ciencia'),
+  ('Emprendimiento'),
+  ('Fotografía'),
+  ('Voluntariado')
+on conflict (name) do nothing;
+
 alter table public.profiles enable row level security;
 alter table public.interests enable row level security;
 alter table public.profile_interests enable row level security;

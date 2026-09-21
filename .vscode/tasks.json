@@ -387,6 +387,46 @@
 			"problemMatcher": [
 				"$tsc"
 			]
+		},
+		{
+			"label": "Nexus - validar configuración Supabase",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run typecheck"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "Nexus - lint configuración Supabase",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"/c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npm run lint"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$eslint-stylish"
+			]
+		},
+		{
+			"label": "Nexus - comprobar CLI Supabase temporal",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/d",
+				"c",
+				"set PATH=C:\\PROGRA~1\\nodejs;%PATH%&& npx --yes supabase --version"
+			],
+			"isBackground": false,
+			"problemMatcher": []
 		}
 	]
 }

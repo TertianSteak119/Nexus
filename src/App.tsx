@@ -7,6 +7,7 @@ import { AuthPage } from './features/auth/AuthPage'
 import { AuthProvider } from './features/auth/AuthContext'
 import { useAuth } from './features/auth/useAuth'
 import { ProfilePage } from './features/profile/ProfilePage'
+import { FeedPage } from './features/feed/FeedPage'
 
 const queryClient = new QueryClient()
 
@@ -19,7 +20,7 @@ export function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<AppShell />}>
-          <Route index element={<HomePage />} />
+          <Route index element={user ? <FeedPage /> : <HomePage />} />
           <Route path="discover" element={<PlaceholderPage title="Descubrir" description="Busca personas, intereses y proyectos dentro de tu espacio." />} />
           <Route path="messages" element={<PlaceholderPage title="Mensajes" description="Las conversaciones de Nexus llegarán en la Fase 5." />} />
           <Route path="profile" element={user ? <ProfilePage /> : <AuthPage />} />

@@ -14,10 +14,7 @@ Preparado y comprobable:
 
 Pendiente para cerrar la Fase 2:
 
-- Selector y carga de avatar.
-- Seleccion multiple de intereses.
-- Seleccion de `friends`, `projects`, `study_groups` y `other` con texto libre.
-- Carga de promedio y foto de boleta para crear `grade_verifications` en `pending`.
+- Aplicar las migraciones al proyecto Supabase remoto.
 - Tipos generados desde el esquema local con `supabase gen types`.
 - Pruebas RLS ejecutadas contra Supabase local.
 
@@ -118,8 +115,6 @@ Estas pruebas deben repetirse mediante API directa, no solo desde la interfaz.
 
 ## 7. Probar Storage de boletas
 
-Cuando exista la pantalla de carga de boleta:
-
 1. Sube un JPG, PNG o WebP menor al limite.
 2. Confirma que se crea una fila `grade_verifications` con `status = 'pending'`.
 3. Intenta abrir el path de la boleta como URL publica: debe fallar.
@@ -127,12 +122,24 @@ Cuando exista la pantalla de carga de boleta:
 5. Un usuario distinto no debe leerla.
 6. Un moderador debe poder verla mediante URL firmada.
 
-## 8. Resultado para cerrar la fase
+## 8. Probar Fase 3
+
+1. Inicia sesion con dos perfiles del mismo espacio.
+2. Crea una publicacion de texto y confirma que aparece en el feed.
+3. Intenta publicar contenido vacio: el boton debe permanecer desactivado.
+4. Edita y borra una publicacion propia.
+5. Agrega un comentario y borralo.
+6. Confirma que un perfil del otro espacio no aparece en el feed.
+7. Crea mas de 20 publicaciones y usa `Cargar mas publicaciones`.
+8. Intenta consultar o modificar los datos usando API directa con un usuario que no sea el autor: RLS debe rechazarlo.
+
+## 9. Resultado para cerrar la fase
 
 La Fase 2 solo puede marcarse como completada cuando:
 
 - Las pruebas de las secciones 4, 5 y 6 pasan.
 - Avatar, intereses, preferencias de busqueda, promedio y boleta estan implementados.
+- Las pruebas de publicaciones, comentarios y paginacion de la seccion 8 pasan.
 - La prueba de Storage de la seccion 7 pasa.
 - `npm run typecheck`, `npm run lint` y `npm run build` pasan.
 - `supabase db reset` reconstruye el esquema sin errores.
