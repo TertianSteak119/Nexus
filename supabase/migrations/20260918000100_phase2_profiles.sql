@@ -60,7 +60,7 @@ $$;
 
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
-  username text not null unique check (username ~ '^[a-z0-9_]{3,30}$'),
+  username text not null unique check (char_length(trim(username)) between 3 and 30 and username = trim(username)),
   full_name text not null check (char_length(trim(full_name)) between 2 and 80),
   avatar_path text,
   bio text check (bio is null or char_length(bio) <= 500),

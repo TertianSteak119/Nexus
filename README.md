@@ -45,6 +45,18 @@ Si usas un proyecto alojado en Supabase:
 4. Guarda `.env` en la raíz del proyecto, al mismo nivel que `package.json`.
 5. Reinicia Vite completamente con `Ctrl+C` y después `npm run dev`.
 
+Si PowerShell bloquea `npm.ps1`, ejecuta el equivalente usando el wrapper `.cmd`:
+
+```powershell
+npm.cmd run dev
+```
+
+También puedes usar el script preparado para Windows:
+
+```powershell
+npm.cmd run dev:windows
+```
+
 El archivo debe verse así, usando tus valores reales:
 
 ```env

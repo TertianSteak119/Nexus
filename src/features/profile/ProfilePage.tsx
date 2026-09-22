@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
 
 const profileSchema = z.object({
-  username: z.string().regex(/^[a-z0-9_]{3,30}$/, 'Usa 3-30 caracteres: minúsculas, números o guion bajo.'),
+  username: z.string().trim().min(3, 'Usa al menos 3 caracteres.').max(30, 'Usa máximo 30 caracteres.').regex(/^[\p{L}\p{N} _-]+$/u, 'Usa letras, números, espacios, guion o guion bajo.'),
   fullName: z.string().trim().min(2, 'Escribe tu nombre completo.').max(80),
   birthDate: z.string().min(1, 'Selecciona tu fecha de nacimiento.'),
   schoolLevel: z.enum(['secundaria', 'preparatoria', 'universidad']),
@@ -177,7 +177,7 @@ export function ProfilePage() {
         <button type="button" onClick={() => void signOut()} className="text-sm font-bold text-[var(--nexus-muted)] hover:text-[var(--nexus-navy)]">Cerrar sesión</button>
       </div>
       <form onSubmit={saveProfile} className="mt-8 grid gap-5 rounded-3xl border border-[var(--nexus-line)] bg-white p-6 shadow-xl shadow-slate-200/60 sm:grid-cols-2 sm:p-8">
-        <Field label="Username"><input value={username} onChange={(event) => setUsername(event.target.value)} className="input" placeholder="tu_usuario" /></Field>
+        <Field label="Nombre de usuario"><input value={username} onChange={(event) => setUsername(event.target.value)} className="input" placeholder="Tu nombre de usuario" /><span className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">Acepta mayúsculas, espacios, ñ, números, guiones y guion bajo.</span></Field>
         <Field label="Nombre completo"><input value={fullName} onChange={(event) => setFullName(event.target.value)} className="input" placeholder="Tu nombre" /></Field>
         <Field label="Fecha de nacimiento"><input value={birthDate} onChange={(event) => setBirthDate(event.target.value)} type="date" max={maximumBirthDate()} className="input" aria-describedby="birth-date-help" /><span id="birth-date-help" className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">Puedes editarla. Debes tener al menos 12 años.</span></Field>
         <Field label="Nivel escolar"><select value={schoolLevel} onChange={(event) => setSchoolLevel(event.target.value as typeof schoolLevel)} className="input"><option value="secundaria">Secundaria</option><option value="preparatoria">Preparatoria</option><option value="universidad">Universidad</option></select></Field>
