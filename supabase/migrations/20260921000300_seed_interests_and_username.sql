@@ -22,4 +22,5 @@ insert into public.interests (name) values
   ('Idiomas'),
   ('Emprendimiento'),
   ('Voluntariado')
+  ,('Estudio')
 on conflict (name) do nothing;

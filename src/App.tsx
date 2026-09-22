@@ -8,6 +8,7 @@ import { AuthProvider } from './features/auth/AuthContext'
 import { useAuth } from './features/auth/useAuth'
 import { ProfilePage } from './features/profile/ProfilePage'
 import { FeedPage } from './features/feed/FeedPage'
+import { DiscoverPage } from './features/discover/DiscoverPage'
 
 const queryClient = new QueryClient()
 
@@ -21,7 +22,7 @@ export function App() {
       <Routes>
         <Route element={<AppShell />}>
           <Route index element={user ? <FeedPage /> : <HomePage />} />
-          <Route path="discover" element={<PlaceholderPage title="Descubrir" description="Busca personas, intereses y proyectos dentro de tu espacio." />} />
+          <Route path="discover" element={<DiscoverPage />} />
           <Route path="messages" element={<PlaceholderPage title="Mensajes" description="Las conversaciones de Nexus llegarán en la Fase 5." />} />
           <Route path="profile" element={user ? <ProfilePage /> : <AuthPage />} />
           <Route path="*" element={<PlaceholderPage title="Página no encontrada" description="Esta ruta no existe en Nexus." />} />
