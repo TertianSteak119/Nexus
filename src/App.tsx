@@ -10,6 +10,8 @@ import { useAuth } from './features/auth/useAuth'
 import { ProfilePage } from './features/profile/ProfilePage'
 import { FeedPage } from './features/feed/FeedPage'
 import { DiscoverPage } from './features/discover/DiscoverPage'
+import { MessagesPage } from './features/messages/MessagesPage'
+import { PublicProfilePage } from './features/profile/PublicProfilePage'
 import { supabase } from './lib/supabase'
 
 const queryClient = new QueryClient()
@@ -64,8 +66,9 @@ export function App() {
         <Route element={<AppShell />}>
           <Route index element={!user ? <HomePage /> : needsProfile ? <ProfilePage /> : <FeedPage />} />
           <Route path="discover" element={!user ? <AuthPage /> : needsProfile ? <ProfilePage /> : <DiscoverPage />} />
-          <Route path="messages" element={!user ? <AuthPage /> : needsProfile ? <ProfilePage /> : <PlaceholderPage title="Mensajes" description="Las conversaciones de Nexus llegarán en la Fase 5." />} />
+          <Route path="messages" element={!user ? <AuthPage /> : needsProfile ? <ProfilePage /> : <MessagesPage />} />
           <Route path="profile" element={user ? <ProfilePage /> : <AuthPage />} />
+          <Route path="profile/:id" element={!user ? <AuthPage /> : needsProfile ? <ProfilePage /> : <PublicProfilePage />} />
           <Route path="*" element={<PlaceholderPage title="Página no encontrada" description="Esta ruta no existe en Nexus." />} />
         </Route>
       </Routes>
