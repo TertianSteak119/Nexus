@@ -189,9 +189,7 @@ export function MessagesPage() {
   return (
     <section className="mx-auto max-w-6xl">
       <div className="mb-7">
-        <p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--nexus-coral)]">Fase 5 · mensajes</p>
-        <h1 className="mt-3 font-display text-4xl font-bold text-[var(--nexus-navy)]">Conversaciones.</h1>
-        <p className="mt-2 text-sm text-[var(--nexus-muted)]">Los mensajes son solo texto y respetan automáticamente bloqueos y reglas de edad.</p>
+        <h1 className="font-display text-4xl font-bold text-[var(--nexus-navy)]">Conversaciones.</h1>
       </div>
 
       {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
