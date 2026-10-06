@@ -11,7 +11,7 @@ const authSchema = z.object({
 type AuthMode = 'login' | 'signup'
 
 export function AuthPage() {
-  const { configured } = useAuth()
+  useAuth()
   const [mode, setMode] = useState<AuthMode>('login')
   const [email, setEmail] = useState('')
   const [fullName, setFullName] = useState('')
@@ -32,7 +32,7 @@ export function AuthPage() {
         return
       }
       if (!supabase) {
-        setError('Configura Supabase para recuperar tu contraseña.')
+        setError('No fue posible iniciar la recuperación de contraseña. Intenta más tarde.')
         return
       }
       setSubmitting(true)
@@ -52,7 +52,7 @@ export function AuthPage() {
       return
     }
     if (!supabase) {
-      setError('Falta la conexión con Supabase. Crea un archivo .env en la raíz, agrega VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY, y reinicia npm run dev.')
+      setError('El servicio de acceso no está disponible en este momento. Intenta más tarde.')
       return
     }
     setSubmitting(true)
@@ -106,7 +106,6 @@ export function AuthPage() {
           Contraseña
           <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} className="mt-2 w-full rounded-xl border border-[var(--nexus-line)] px-4 py-3 outline-none focus:border-[var(--nexus-coral)]" placeholder="Mínimo 8 caracteres" />
         </label>}
-        {!configured && <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Modo de configuración: la interfaz está lista, pero Supabase aún no está conectado.</p>}
         {error && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
         {message && <p role="status" className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{message}</p>}
         <button disabled={submitting} className="mt-6 w-full rounded-xl bg-[var(--nexus-navy)] px-4 py-3 font-bold text-white transition hover:bg-[var(--nexus-ink)] disabled:cursor-wait disabled:opacity-60">
