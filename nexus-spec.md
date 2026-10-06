@@ -127,11 +127,18 @@ Funciones auxiliares recomendadas: `is_blocked(a, b)`, `same_space(a, b)`, `can_
 **Aceptación:** un usuario bloqueado no puede enviar mensajes ni ver el perfil; 12–15 no puede chatear con 18+; 16–17 sí puede chatear con menores y adultos; insertar una solicitud vía API directa con el switch apagado falla.
 
 ### Fase 6 · Grupos
-- Listado y búsqueda de grupos del mismo espacio
-- Unirse/salir; chat grupal en tiempo real con Presence (quién está en línea)
-- Los grupos pertenecen a un `age_space`; un usuario solo ve y entra a los de su espacio
+**Estado: implementada (backend + interfaz).**
 
-**Aceptación:** ningún usuario puede unirse a un grupo de otro espacio aunque llame la API directamente.
+- Listado y búsqueda de grupos del mismo espacio
+- Solo administradores/moderadores pueden crear, editar o eliminar grupos
+- Los usuarios normales pueden unirse, salir y enviar sugerencias de nuevos grupos
+- Publicaciones y comentarios dentro del grupo
+- Chat grupal en tiempo real con Presence (quién está en línea)
+- Lista de miembros
+- Los grupos pertenecen a un `age_space` (`teen` o `adult`); un usuario normal solo ve y entra a los de su espacio
+- Administradores/moderadores pueden acceder a ambos espacios para gestión
+
+**Aceptación:** un usuario normal no puede crear grupos ni unirse a un grupo de otro espacio aunque llame la API directamente; el chat grupal solo funciona para miembros.
 
 ### Fase 7 · Moderación
 - Botón de reporte en perfiles, posts, comentarios y mensajes: categoría, mensaje y foto de evidencia
