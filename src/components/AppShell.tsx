@@ -4,6 +4,7 @@ const navigation = [
   { to: '/', label: 'Inicio', icon: '⌂' },
   { to: '/discover', label: 'Descubrir', icon: '⌕' },
   { to: '/messages', label: 'Mensajes', icon: '✉' },
+  { to: '/groups', label: 'Grupos', icon: '◫' },
   { to: '/profile', label: 'Perfil', icon: '○' },
 ]
 
