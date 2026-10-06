@@ -17,6 +17,24 @@ as $$
   end
 $$;
 
+create table public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  username text not null unique check (char_length(trim(username)) between 3 and 30 and username = trim(username)),
+  full_name text not null check (char_length(trim(full_name)) between 2 and 80),
+  avatar_path text,
+  bio text check (bio is null or char_length(bio) <= 500),
+  birth_date date not null check (public.age_space(birth_date) is not null),
+  school_level public.school_level not null,
+  school_name text not null check (char_length(trim(school_name)) between 2 and 120),
+  gpa numeric(4, 2) check (gpa is null or (gpa >= 0 and gpa <= 10)),
+  gpa_verified boolean not null default false,
+  accepts_message_requests boolean not null default true,
+  role public.profile_role not null default 'user',
+  status public.profile_status not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create or replace function public.current_age_space()
 returns text
 language sql
@@ -57,24 +75,6 @@ as $$
     where id = auth.uid() and role = 'moderator' and status = 'active'
   )
 $$;
-
-create table public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  username text not null unique check (char_length(trim(username)) between 3 and 30 and username = trim(username)),
-  full_name text not null check (char_length(trim(full_name)) between 2 and 80),
-  avatar_path text,
-  bio text check (bio is null or char_length(bio) <= 500),
-  birth_date date not null check (public.age_space(birth_date) is not null),
-  school_level public.school_level not null,
-  school_name text not null check (char_length(trim(school_name)) between 2 and 120),
-  gpa numeric(4, 2) check (gpa is null or (gpa >= 0 and gpa <= 10)),
-  gpa_verified boolean not null default false,
-  accepts_message_requests boolean not null default true,
-  role public.profile_role not null default 'user',
-  status public.profile_status not null default 'active',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
 
 create table public.interests (
   id uuid primary key default gen_random_uuid(),
