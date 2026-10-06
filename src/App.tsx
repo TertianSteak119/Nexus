@@ -30,14 +30,13 @@ export function App() {
         return
       }
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle()
+      const [{ data, error }, { data: verificationData, error: verificationError }] = await Promise.all([
+        supabase.from('profiles').select('id').eq('id', user.id).maybeSingle(),
+        supabase.from('grade_verifications').select('id').eq('profile_id', user.id).limit(1),
+      ])
 
       if (!active) return
-      const ready = !error && Boolean(data)
+      const ready = !error && !verificationError && Boolean(data) && Boolean(verificationData?.length)
       setProfileReady(ready)
 
       if (!ready) {
