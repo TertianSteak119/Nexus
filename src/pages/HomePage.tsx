@@ -1,10 +1,7 @@
-import { isSupabaseConfigured } from '../lib/supabase'
-
 export function HomePage() {
   return (
     <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
       <div className="animate-rise">
-        <p className="mb-4 text-sm font-bold uppercase tracking-[0.2em] text-[var(--nexus-coral)]">Fase 1 · Base lista</p>
         <h1 className="max-w-3xl font-display text-5xl font-bold leading-[0.95] tracking-tight text-[var(--nexus-navy)] sm:text-7xl">
           Un lugar para encontrar tu gente.
         </h1>
@@ -24,26 +21,11 @@ export function HomePage() {
       <div className="relative overflow-hidden rounded-[2rem] bg-[var(--nexus-navy)] p-7 text-white shadow-2xl shadow-slate-300 animate-rise-delayed">
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full border-[24px] border-[var(--nexus-gold)]/80" />
         <div className="relative">
-          <p className="text-sm font-semibold text-[var(--nexus-gold)]">Estado del espacio</p>
-          <h2 className="mt-10 font-display text-3xl font-bold">La base está preparada.</h2>
-          <div className="mt-8 space-y-3 text-sm text-slate-200">
-            <Status label="Frontend Vite + React + TypeScript" done />
-            <Status label="Navegación mobile first" done />
-            <Status label="Cliente Supabase" done={isSupabaseConfigured} />
-          </div>
+          <p className="text-sm font-semibold text-[var(--nexus-gold)]">Conecta con estudiantes</p>
+          <h2 className="mt-10 font-display text-3xl font-bold">Encuentra personas con intereses como los tuyos.</h2>
+          <p className="mt-5 max-w-md text-sm leading-7 text-slate-200">Comparte ideas, descubre perfiles y conversa con estudiantes que buscan aprender, crear y colaborar.</p>
         </div>
       </div>
     </section>
-  )
-}
-
-function Status({ label, done }: { label: string; done: boolean }) {
-  return (
-    <div className="flex items-center gap-3 border-t border-white/15 pt-3">
-      <span className={`grid h-6 w-6 place-items-center rounded-full text-xs font-bold ${done ? 'bg-[var(--nexus-gold)] text-[var(--nexus-navy)]' : 'bg-white/15 text-white'}`}>
-        {done ? '✓' : '·'}
-      </span>
-      <span>{label}</span>
-    </div>
   )
 }
