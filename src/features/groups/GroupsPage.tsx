@@ -8,7 +8,7 @@ type Group = {
   name: string
   description: string | null
   topic: string
-  age_space: 'all' | 'teen' | 'adult'
+  age_space: 'teen' | 'adult'
   created_by: string
   created_at: string
 }
@@ -24,7 +24,7 @@ export function GroupsPage() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [topic, setTopic] = useState('')
-  const [ageSpace, setAgeSpace] = useState<'all' | 'teen' | 'adult'>('all')
+  const [ageSpace, setAgeSpace] = useState<'teen' | 'adult'>('teen')
   const [suggestionName, setSuggestionName] = useState('')
   const [suggestionDescription, setSuggestionDescription] = useState('')
   const [showCreate, setShowCreate] = useState(false)
@@ -80,7 +80,7 @@ export function GroupsPage() {
     setName('')
     setDescription('')
     setTopic('')
-    setAgeSpace('all')
+    setAgeSpace('teen')
     setShowCreate(false)
     setFeedback('Grupo creado.')
   }
@@ -168,7 +168,6 @@ export function GroupsPage() {
           </label>
           <label className="text-sm font-semibold text-[var(--nexus-ink)]">Acceso
             <select value={ageSpace} onChange={(event) => setAgeSpace(event.target.value as typeof ageSpace)} className="input">
-              <option value="all">Todos</option>
               <option value="teen">12 a 17 años</option>
               <option value="adult">18 años o más</option>
             </select>
