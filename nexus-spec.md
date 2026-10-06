@@ -116,10 +116,12 @@ Funciones auxiliares recomendadas: `is_blocked(a, b)`, `same_space(a, b)`, `can_
 **Aceptación:** búsqueda y sugerencias respetan la compatibilidad de edad: 12–15 → 12–17, 16–17 → 12+, 18+ → 16+; nunca incluyen bloqueados.
 
 ### Fase 5 · Chat 1 a 1 y bloqueos
+
+**Estado: implementada (backend + interfaz).**
 - Enviar solicitud de chat solo si el destinatario tiene `accepts_message_requests = true`, `can_direct_chat(from_id, to_id)` devuelve true y no existe bloqueo — validado en RLS
 - Aceptar/rechazar solicitud → crea `conversation` tipo `direct`
 - Mensajes en tiempo real con Supabase Realtime (solo texto)
-- Bloquear/desbloquear desde perfil y chat; el bloqueo oculta perfil, posts y comentarios, y corta el chat
+- Bloquear desde perfil y chat; botón **Desbloquear** en el perfil bloqueado y en la sección **Usuarios bloqueados** del perfil propio; el bloqueo oculta perfil, posts y comentarios, y corta el chat
 - Si el perfil no acepta solicitudes, mostrar "No recibe solicitudes" en lugar del botón
 
 **Aceptación:** un usuario bloqueado no puede enviar mensajes ni ver el perfil; 12–15 no puede chatear con 18+; 16–17 sí puede chatear con menores y adultos; insertar una solicitud vía API directa con el switch apagado falla.
