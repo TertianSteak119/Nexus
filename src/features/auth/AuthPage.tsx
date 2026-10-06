@@ -59,7 +59,7 @@ export function AuthPage() {
       setError(response.error.message)
       return
     }
-    if (mode === 'signup') setMessage('Cuenta creada. Revisa tu correo para confirmar la dirección.')
+    if (mode === 'signup') setMessage('A espera de que la solicitud sea aprobada')
   }
 
   return (
