@@ -18,6 +18,7 @@ type Membership = { group_id: string; role: 'owner' | 'member' }
 export function GroupsPage() {
   const { user } = useAuth()
   const [groups, setGroups] = useState<Group[]>([])
+  const [search, setSearch] = useState('')
   const [memberships, setMemberships] = useState<Record<string, Membership>>({})
   const [canCreate, setCanCreate] = useState(false)
   const [name, setName] = useState('')
@@ -194,8 +195,18 @@ export function GroupsPage() {
         </form>
       )}
 
-      <div className="mt-7 grid gap-4 md:grid-cols-2">
-        {loading ? <p className="text-sm text-[var(--nexus-muted)]">Cargando grupos...</p> : groups.length ? groups.map((group) => {
+      <div className="mt-7">
+        <input value={search} onChange={(event) => setSearch(event.target.value)} className="input max-w-xl" placeholder="Buscar por nombre o tema" />
+      </div>
+
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        {loading ? <p className="text-sm text-[var(--nexus-muted)]">Cargando grupos...</p> : groups.filter((group) => {
+          const term = search.trim().toLowerCase()
+          return !term || group.name.toLowerCase().includes(term) || group.topic.toLowerCase().includes(term) || (group.description ?? '').toLowerCase().includes(term)
+        }).length ? groups.filter((group) => {
+          const term = search.trim().toLowerCase()
+          return !term || group.name.toLowerCase().includes(term) || group.topic.toLowerCase().includes(term) || (group.description ?? '').toLowerCase().includes(term)
+        }).map((group) => {
           const membership = memberships[group.id]
           return (
             <article key={group.id} className="rounded-3xl border border-[var(--nexus-line)] bg-white p-5 shadow-sm">
