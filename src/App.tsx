@@ -20,6 +20,7 @@ export function App() {
 
   useEffect(() => {
     let active = true
+    let timer: number | undefined
 
     async function checkProfile() {
       if (!user) {
@@ -27,7 +28,6 @@ export function App() {
         return
       }
 
-      setProfileReady(null)
       const { data, error } = await supabase
         .from('profiles')
         .select('id')
@@ -35,19 +35,20 @@ export function App() {
         .maybeSingle()
 
       if (!active) return
-      setProfileReady(!error && Boolean(data))
+      const ready = !error && Boolean(data)
+      setProfileReady(ready)
+
+      if (!ready) {
+        timer = window.setTimeout(() => void checkProfile(), 1500)
+      }
     }
 
+    setProfileReady(user ? null : false)
     void checkProfile()
 
-    const handleProfileSaved = () => {
-      if (active) setProfileReady(true)
-    }
-
-    window.addEventListener('nexus:profile-saved', handleProfileSaved)
     return () => {
       active = false
-      window.removeEventListener('nexus:profile-saved', handleProfileSaved)
+      if (timer) window.clearTimeout(timer)
     }
   }, [user])
 
