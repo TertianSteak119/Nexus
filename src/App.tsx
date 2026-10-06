@@ -13,6 +13,8 @@ import { DiscoverPage } from './features/discover/DiscoverPage'
 import { MessagesPage } from './features/messages/MessagesPage'
 import { PublicProfilePage } from './features/profile/PublicProfilePage'
 import { AdminConsolePage } from './features/admin/AdminConsolePage'
+import { GroupsPage } from './features/groups/GroupsPage'
+import { GroupDetailPage } from './features/groups/GroupDetailPage'
 import { supabase } from './lib/supabase'
 
 const queryClient = new QueryClient()
@@ -67,6 +69,8 @@ export function App() {
           <Route index element={!user ? <HomePage /> : needsProfile ? <ProfilePage /> : <FeedPage />} />
           <Route path="discover" element={!user ? <AuthPage /> : needsProfile ? <ProfilePage /> : <DiscoverPage />} />
           <Route path="messages" element={!user ? <AuthPage /> : needsProfile ? <ProfilePage /> : <MessagesPage />} />
+          <Route path="groups" element={!user ? <AuthPage /> : needsProfile ? <ProfilePage /> : <GroupsPage />} />
+          <Route path="groups/:id" element={!user ? <AuthPage /> : needsProfile ? <ProfilePage /> : <GroupDetailPage />} />
           <Route path="profile" element={user ? <ProfilePage /> : <AuthPage />} />
           <Route path="profile/:id" element={!user ? <AuthPage /> : needsProfile ? <ProfilePage /> : <PublicProfilePage />} />
           <Route path="control" element={!user ? <AuthPage /> : <AdminConsolePage />} />
