@@ -21,7 +21,7 @@ const lookingForOptions = [
 ] as const
 
 export function ProfilePage() {
-  const { user, configured, signOut } = useAuth()
+  const { user, signOut } = useAuth()
   const [username, setUsername] = useState('')
   const [fullName, setFullName] = useState('')
   const [birthDate, setBirthDate] = useState('')
@@ -119,7 +119,7 @@ export function ProfilePage() {
       return
     }
     if (!supabase || !user) {
-      setError('Necesitas una sesión activa y Supabase configurado para guardar el perfil.')
+      setError('No fue posible guardar el perfil en este momento.')
       return
     }
     const { error: saveError } = await supabase.from('profiles').upsert({
@@ -204,7 +204,7 @@ export function ProfilePage() {
   return (
     <section className="mx-auto max-w-3xl">
       <div className="flex items-end justify-between gap-4">
-        <div><p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--nexus-coral)]">Fase 2 · onboarding</p><h1 className="mt-3 font-display text-4xl font-bold text-[var(--nexus-navy)]">Cuéntanos de ti.</h1></div>
+        <div><h1 className="font-display text-4xl font-bold text-[var(--nexus-navy)]">Cuéntanos de ti.</h1></div>
         <button type="button" onClick={() => void signOut()} className="text-sm font-bold text-[var(--nexus-muted)] hover:text-[var(--nexus-navy)]">Cerrar sesión</button>
       </div>
       <form onSubmit={saveProfile} className="mt-8 grid gap-5 rounded-3xl border border-[var(--nexus-line)] bg-white p-6 shadow-xl shadow-slate-200/60 sm:grid-cols-2 sm:p-8">
@@ -218,9 +218,8 @@ export function ProfilePage() {
         <Field label="Promedio escolar · obligatorio"><input value={gpa} onChange={(event) => setGpa(event.target.value)} type="number" min="0" max="10" step="0.01" required className="input" placeholder="0 a 10" /></Field>
         <fieldset className="sm:col-span-2"><legend className="text-sm font-semibold text-[var(--nexus-ink)]">¿Qué buscas?</legend><div className="mt-2 grid gap-2 sm:grid-cols-2">{lookingForOptions.map((option) => <label key={option.value} className="flex items-center gap-3 text-sm text-[var(--nexus-muted)]"><input type="checkbox" checked={lookingFor.includes(option.value)} onChange={(event) => setLookingFor((current) => event.target.checked ? [...current, option.value] : current.filter((value) => value !== option.value))} className="h-4 w-4 accent-[var(--nexus-coral)]" />{option.label}</label>)}</div>{lookingFor.includes('other') && <input value={otherLookingFor} onChange={(event) => setOtherLookingFor(event.target.value)} className="input" placeholder="Cuéntanos qué buscas" />}</fieldset>
         <fieldset className="sm:col-span-2"><legend className="text-sm font-semibold text-[var(--nexus-ink)]">Intereses</legend><div className="mt-2 flex flex-wrap gap-2">{interests.length ? interests.map((interest) => <label key={interest.id} className={`cursor-pointer rounded-full border px-3 py-2 text-sm ${selectedInterests.includes(interest.id) ? 'border-[var(--nexus-coral)] bg-orange-50 text-[var(--nexus-coral)]' : 'border-[var(--nexus-line)] text-[var(--nexus-muted)]'}`}><input type="checkbox" className="sr-only" checked={selectedInterests.includes(interest.id)} onChange={(event) => setSelectedInterests((current) => event.target.checked ? [...current, interest.id] : current.filter((id) => id !== interest.id))} />{interest.name}</label>) : <p className="text-sm text-[var(--nexus-muted)]">Aún no hay intereses configurados.</p>}</div></fieldset>
-        <Field label="Foto de boleta/comprobante · obligatorio"><input type="file" accept="image/jpeg,image/png,image/webp" required={!hasGradeVerification} onChange={(event) => setGradeFile(event.target.files?.[0] ?? null)} className="input file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--nexus-mist)] file:px-3 file:py-2" /><span className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">{hasGradeVerification ? "Comprobante ya enviado. Puedes subir uno nuevo si deseas actualizarlo." : "Debes subirlo para completar el acceso. Se guarda de forma privada y queda pendiente de moderación."}</span></Field>
+        <Field label="Foto de boleta/comprobante · obligatorio"><input type="file" accept="image/jpeg,image/png,image/webp" required={!hasGradeVerification} onChange={(event) => setGradeFile(event.target.files?.[0] ?? null)} className="input file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--nexus-mist)] file:px-3 file:py-2" /><span className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">{hasGradeVerification ? "Comprobante ya enviado. Puedes subir uno nuevo si deseas actualizarlo." : "Debes subirlo para completar el acceso. Tu comprobante se mantiene privado."}</span></Field>
         <label className="flex items-center gap-3 text-sm font-semibold text-[var(--nexus-ink)] sm:col-span-2"><input checked={acceptsRequests} onChange={(event) => setAcceptsRequests(event.target.checked)} type="checkbox" className="h-5 w-5 accent-[var(--nexus-coral)]" />Recibir solicitudes de mensaje</label>
-        {!configured && <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800 sm:col-span-2">Supabase está desconectado: puedes revisar el formulario, pero el guardado requiere `.env`.</p>}
         {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700 sm:col-span-2">{error}</p>}
         {feedback && <p role="status" className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700 sm:col-span-2">{feedback}</p>}
         <button className="rounded-xl bg-[var(--nexus-coral)] px-4 py-3 font-bold text-white hover:bg-[#d95a42] sm:col-span-2">Guardar perfil</button>
