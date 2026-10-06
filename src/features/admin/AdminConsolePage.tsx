@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 
 type Summary = {
+  total_users: number
   reported_accounts: number
   pending_reports: number
   active_bans: number
@@ -142,7 +143,8 @@ export function AdminConsolePage() {
 
       {error && <p className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p>}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <Stat label="Usuarios registrados" value={summary?.total_users ?? 0} />
         <Stat label="Cuentas reportadas" value={summary?.reported_accounts ?? 0} />
         <Stat label="Reportes pendientes" value={summary?.pending_reports ?? 0} />
         <Stat label="Baneos activos" value={summary?.active_bans ?? 0} />
