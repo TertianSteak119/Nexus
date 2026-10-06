@@ -118,24 +118,17 @@ export function AdminConsolePage() {
   if (access === 'locked') {
     return (
       <section className="mx-auto max-w-xl py-12 text-center">
-        <p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--nexus-coral)]">Nexus · administración</p>
-        <h1 className="mt-4 font-display text-4xl font-bold text-[var(--nexus-navy)]">Panel bloqueado</h1>
-        <p className="mt-4 leading-7 text-[var(--nexus-muted)]">
-          Este apartado está protegido por el backend. El mecanismo de código secreto todavía no está habilitado.
-        </p>
+        <h1 className="font-display text-4xl font-bold text-[var(--nexus-navy)]">Acceso restringido</h1>
         <div className="mt-8 rounded-2xl border border-[var(--nexus-line)] bg-white p-5 text-left">
           <label className="block text-sm font-semibold text-[var(--nexus-ink)]">
             Código de acceso
             <input
               type="password"
               disabled
-              placeholder="Pendiente de activación"
+              placeholder="Código de acceso"
               className="mt-2 w-full rounded-xl border border-[var(--nexus-line)] bg-slate-50 px-4 py-3 text-[var(--nexus-muted)]"
             />
           </label>
-          <p className="mt-3 text-xs leading-5 text-[var(--nexus-muted)]">
-            Aunque alguien descubra esta ruta o modifique el frontend, las consultas de administración siguen bloqueadas en Supabase.
-          </p>
         </div>
       </section>
     )
@@ -144,9 +137,7 @@ export function AdminConsolePage() {
   return (
     <section className="space-y-8">
       <div>
-        <p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--nexus-coral)]">Nexus · administración</p>
-        <h1 className="mt-3 font-display text-4xl font-bold text-[var(--nexus-navy)]">Centro de control</h1>
-        <p className="mt-3 text-[var(--nexus-muted)]">Reportes, baneos y sugerencias centralizadas.</p>
+        <h1 className="font-display text-4xl font-bold text-[var(--nexus-navy)]">Centro de control</h1>
       </div>
 
       {error && <p className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p>}
