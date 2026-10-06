@@ -61,7 +61,7 @@ export function App() {
   const needsProfile = Boolean(user && !profileReady)
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route element={<AppShell />}>
           <Route index element={!user ? <HomePage /> : needsProfile ? <ProfilePage /> : <FeedPage />} />
