@@ -12,6 +12,7 @@ import { FeedPage } from './features/feed/FeedPage'
 import { DiscoverPage } from './features/discover/DiscoverPage'
 import { MessagesPage } from './features/messages/MessagesPage'
 import { PublicProfilePage } from './features/profile/PublicProfilePage'
+import { AdminConsolePage } from './features/admin/AdminConsolePage'
 import { supabase } from './lib/supabase'
 
 const queryClient = new QueryClient()
@@ -68,6 +69,7 @@ export function App() {
           <Route path="messages" element={!user ? <AuthPage /> : needsProfile ? <ProfilePage /> : <MessagesPage />} />
           <Route path="profile" element={user ? <ProfilePage /> : <AuthPage />} />
           <Route path="profile/:id" element={!user ? <AuthPage /> : needsProfile ? <ProfilePage /> : <PublicProfilePage />} />
+          <Route path="control" element={!user ? <AuthPage /> : <AdminConsolePage />} />
           <Route path="*" element={<PlaceholderPage title="Página no encontrada" description="Esta ruta no existe en Nexus." />} />
         </Route>
       </Routes>
