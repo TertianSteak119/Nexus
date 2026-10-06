@@ -14,6 +14,7 @@ export function AuthPage() {
   const { configured } = useAuth()
   const [mode, setMode] = useState<AuthMode>('login')
   const [email, setEmail] = useState('')
+  const [fullName, setFullName] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -41,6 +42,10 @@ export function AuthPage() {
       else setMessage('Te enviamos un enlace para recuperar tu contraseña.')
       return
     }
+    if (mode === 'signup' && fullName.trim().length < 2) {
+      setError('Escribe tu nombre completo.')
+      return
+    }
     const result = authSchema.safeParse({ email, password })
     if (!result.success) {
       setError(result.error.issues[0]?.message ?? 'Revisa los datos.')
@@ -53,13 +58,25 @@ export function AuthPage() {
     setSubmitting(true)
     const response = mode === 'login'
       ? await supabase.auth.signInWithPassword(result.data)
-      : await supabase.auth.signUp({ email: result.data.email, password: result.data.password })
+      : await supabase.auth.signUp({
+          email: result.data.email,
+          password: result.data.password,
+          options: { data: { full_name: fullName.trim() } },
+        })
     setSubmitting(false)
     if (response.error) {
       setError(response.error.message)
       return
     }
-    if (mode === 'signup') setMessage('A espera de que la solicitud sea aprobada')
+    if (mode === 'signup') {
+      if (response.data.user?.id) {
+        const { error: notifyError } = await supabase.functions.invoke('notify-signup', {
+          body: { user_id: response.data.user.id },
+        })
+        if (notifyError) console.error('No se pudo enviar el aviso de registro:', notifyError.message)
+      }
+      setMessage('A espera de que la solicitud sea aprobada')
+    }
   }
 
   return (
@@ -77,7 +94,11 @@ export function AuthPage() {
             </button>
           ))}
         </div>
-        <label className="block text-sm font-semibold text-[var(--nexus-ink)]">
+        {mode === 'signup' && !resetMode && <label className="block text-sm font-semibold text-[var(--nexus-ink)]">
+          Nombre completo
+          <input value={fullName} onChange={(event) => setFullName(event.target.value)} type="text" autoComplete="name" className="mt-2 w-full rounded-xl border border-[var(--nexus-line)] px-4 py-3 outline-none focus:border-[var(--nexus-coral)]" placeholder="Tu nombre completo" />
+        </label>}
+        <label className={`block text-sm font-semibold text-[var(--nexus-ink)] ${mode === 'signup' && !resetMode ? 'mt-4' : ''}`}>
           Correo electrónico
           <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" className="mt-2 w-full rounded-xl border border-[var(--nexus-line)] px-4 py-3 outline-none focus:border-[var(--nexus-coral)]" placeholder="tu@correo.com" />
         </label>
