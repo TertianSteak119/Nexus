@@ -37,6 +37,7 @@ export function ProfilePage() {
   const [otherLookingFor, setOtherLookingFor] = useState('')
   const [gpa, setGpa] = useState('')
   const [gradeFile, setGradeFile] = useState<File | null>(null)
+  const [hasGradeVerification, setHasGradeVerification] = useState(false)
   const [feedback, setFeedback] = useState('')
   const [error, setError] = useState('')
   const [loadingProfile, setLoadingProfile] = useState(true)
@@ -71,10 +72,11 @@ export function ProfilePage() {
         setAvatarPath(data.avatar_path)
         setGpa(data.gpa?.toString() ?? '')
       }
-      const [{ data: interestData }, { data: profileInterestData }, { data: lookingForData }] = await Promise.all([
+      const [{ data: interestData }, { data: profileInterestData }, { data: lookingForData }, { data: gradeVerificationData }] = await Promise.all([
         supabase.from('interests').select('id, name').order('name'),
         supabase.from('profile_interests').select('interest_id').eq('profile_id', user.id),
         supabase.from('profile_looking_for').select('kind, other_text').eq('profile_id', user.id),
+        supabase.from('grade_verifications').select('id').eq('profile_id', user.id).limit(1),
       ])
       if (interestData) setInterests(interestData)
       if (profileInterestData) setSelectedInterests(profileInterestData.map((item) => item.interest_id))
@@ -82,6 +84,7 @@ export function ProfilePage() {
         setLookingFor(lookingForData.map((item) => item.kind))
         setOtherLookingFor(lookingForData.find((item) => item.kind === 'other')?.other_text ?? '')
       }
+      setHasGradeVerification(Boolean(gradeVerificationData?.length))
       const { data: blockedData } = await supabase.rpc('list_blocked_profiles')
       if (blockedData) setBlockedProfiles(blockedData)
       setLoadingProfile(false)
@@ -100,6 +103,14 @@ export function ProfilePage() {
     const result = profileSchema.safeParse({ username, fullName, birthDate, schoolLevel, schoolName, bio, gpa: gpa ? Number(gpa) : null })
     if (!result.success) {
       setError(result.error.issues[0]?.message ?? 'Revisa los datos.')
+      return
+    }
+    if (result.data.gpa === null) {
+      setError('El promedio escolar es obligatorio para completar tu perfil.')
+      return
+    }
+    if (!hasGradeVerification && !gradeFile) {
+      setError('Debes subir una foto de tu boleta o comprobante de promedio para entrar a Nexus.')
       return
     }
     const age = calculateAge(result.data.birthDate)
@@ -150,7 +161,7 @@ export function ProfilePage() {
     }
     if (gradeFile) {
       const extension = gradeFile.name.split('.').pop()?.toLowerCase() ?? 'jpg'
-      if (!['jpg', 'jpeg', 'png', 'webp'].includes(extension) || gradeFile.size > 5 * 1024 * 1024 || !result.data.gpa) {
+      if (!['jpg', 'jpeg', 'png', 'webp'].includes(extension) || gradeFile.size > 5 * 1024 * 1024 || result.data.gpa === null) {
         setError('La boleta debe ser JPG, PNG o WebP, pesar máximo 5 MB y tener un promedio válido.')
         return
       }
@@ -161,6 +172,7 @@ export function ProfilePage() {
       const { error: verificationError } = await supabase.from('grade_verifications').insert({ id: verificationId, profile_id: user.id, gpa: result.data.gpa, image_path: path, status: 'pending' })
       if (verificationError) { setError(verificationError.message); return }
       setGradeFile(null)
+      setHasGradeVerification(true)
     }
     setFeedback('Perfil guardado correctamente.')
   }
@@ -203,10 +215,10 @@ export function ProfilePage() {
         <Field label="Escuela"><input value={schoolName} onChange={(event) => setSchoolName(event.target.value)} className="input" placeholder="Nombre de tu escuela" /></Field>
         <Field label="Bio"><textarea value={bio} onChange={(event) => setBio(event.target.value)} className="input min-h-28 resize-y" placeholder="Qué te interesa compartir..." /></Field>
         <Field label="Avatar"><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setAvatarFile(event.target.files?.[0] ?? null)} className="input file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--nexus-mist)] file:px-3 file:py-2" />{avatarPath && <span className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">Avatar guardado</span>}</Field>
-        <Field label="Promedio escolar"><input value={gpa} onChange={(event) => setGpa(event.target.value)} type="number" min="0" max="10" step="0.01" className="input" placeholder="0 a 10" /></Field>
+        <Field label="Promedio escolar · obligatorio"><input value={gpa} onChange={(event) => setGpa(event.target.value)} type="number" min="0" max="10" step="0.01" required className="input" placeholder="0 a 10" /></Field>
         <fieldset className="sm:col-span-2"><legend className="text-sm font-semibold text-[var(--nexus-ink)]">¿Qué buscas?</legend><div className="mt-2 grid gap-2 sm:grid-cols-2">{lookingForOptions.map((option) => <label key={option.value} className="flex items-center gap-3 text-sm text-[var(--nexus-muted)]"><input type="checkbox" checked={lookingFor.includes(option.value)} onChange={(event) => setLookingFor((current) => event.target.checked ? [...current, option.value] : current.filter((value) => value !== option.value))} className="h-4 w-4 accent-[var(--nexus-coral)]" />{option.label}</label>)}</div>{lookingFor.includes('other') && <input value={otherLookingFor} onChange={(event) => setOtherLookingFor(event.target.value)} className="input" placeholder="Cuéntanos qué buscas" />}</fieldset>
         <fieldset className="sm:col-span-2"><legend className="text-sm font-semibold text-[var(--nexus-ink)]">Intereses</legend><div className="mt-2 flex flex-wrap gap-2">{interests.length ? interests.map((interest) => <label key={interest.id} className={`cursor-pointer rounded-full border px-3 py-2 text-sm ${selectedInterests.includes(interest.id) ? 'border-[var(--nexus-coral)] bg-orange-50 text-[var(--nexus-coral)]' : 'border-[var(--nexus-line)] text-[var(--nexus-muted)]'}`}><input type="checkbox" className="sr-only" checked={selectedInterests.includes(interest.id)} onChange={(event) => setSelectedInterests((current) => event.target.checked ? [...current, interest.id] : current.filter((id) => id !== interest.id))} />{interest.name}</label>) : <p className="text-sm text-[var(--nexus-muted)]">Aún no hay intereses configurados.</p>}</div></fieldset>
-        <Field label="Foto de boleta para verificación"><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setGradeFile(event.target.files?.[0] ?? null)} className="input file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--nexus-mist)] file:px-3 file:py-2" /><span className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">Se guarda en un bucket privado y queda pendiente de moderación.</span></Field>
+        <Field label="Foto de boleta/comprobante · obligatorio"><input type="file" accept="image/jpeg,image/png,image/webp" required={!hasGradeVerification} onChange={(event) => setGradeFile(event.target.files?.[0] ?? null)} className="input file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--nexus-mist)] file:px-3 file:py-2" /><span className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">{hasGradeVerification ? "Comprobante ya enviado. Puedes subir uno nuevo si deseas actualizarlo." : "Debes subirlo para completar el acceso. Se guarda de forma privada y queda pendiente de moderación."}</span></Field>
         <label className="flex items-center gap-3 text-sm font-semibold text-[var(--nexus-ink)] sm:col-span-2"><input checked={acceptsRequests} onChange={(event) => setAcceptsRequests(event.target.checked)} type="checkbox" className="h-5 w-5 accent-[var(--nexus-coral)]" />Recibir solicitudes de mensaje</label>
         {!configured && <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800 sm:col-span-2">Supabase está desconectado: puedes revisar el formulario, pero el guardado requiere `.env`.</p>}
         {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700 sm:col-span-2">{error}</p>}
