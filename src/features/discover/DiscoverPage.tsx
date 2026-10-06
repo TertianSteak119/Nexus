@@ -47,7 +47,7 @@ export function DiscoverPage() {
 
   return (
     <section className="mx-auto max-w-5xl">
-      <div className="mb-8"><p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--nexus-coral)]">Fase 4 · descubrir</p><h1 className="mt-3 font-display text-4xl font-bold text-[var(--nexus-navy)]">Encuentra intereses en común.</h1></div>
+      <div className="mb-8"><h1 className="font-display text-4xl font-bold text-[var(--nexus-navy)]">Encuentra intereses en común.</h1></div>
       <form onSubmit={(event) => { event.preventDefault(); void runSearch() }} className="grid gap-4 rounded-2xl border border-[var(--nexus-line)] bg-white p-5 sm:grid-cols-[1fr_160px_auto] sm:items-end">
         <label className="text-sm font-bold text-[var(--nexus-ink)]">Nombre o username<input value={query} onChange={(event) => setQuery(event.target.value)} className="input" placeholder="Busca personas" /></label>
         <label className="text-sm font-bold text-[var(--nexus-ink)]">Promedio mínimo<input value={minGpa} onChange={(event) => setMinGpa(event.target.value)} type="number" min="0" max="10" step="0.1" className="input" placeholder="0 a 10" /></label>
