@@ -15,10 +15,13 @@ Red social para estudiantes (secundaria a universidad), estilo Facebook. Proyect
 
 ## 2. Reglas no negociables
 
-1. **Dos espacios de edad separados: `teen` (12–17) y `adult` (18+).** No se encimen ni se mezclen.
-   - Se calcula a partir de `birth_date`, nunca lo elige el usuario. Al cumplir 18 el usuario pasa automáticamente a `adult` (usar una función/vista que lo calcule, no un valor fijo).
-   - Búsqueda, sugerencias, feed, perfiles, solicitudes de chat, chats y grupos **solo funcionan dentro del mismo espacio**.
+1. **Acceso por edad según el tipo de interacción.**
    - Edad mínima de registro: 12 años. Rechazar registros menores.
+   - La edad se calcula siempre a partir de `birth_date`; nunca la elige el usuario.
+   - **Contenido público autenticado (posts y comentarios):** cualquier usuario registrado de 12+ puede ver y comentar publicaciones de cualquier edad, siempre respetando bloqueos y estado de cuenta.
+   - **Perfiles, búsqueda y sugerencias:** usar compatibilidad por edad. Usuarios de 12–15 pueden ver perfiles de 12–17; usuarios de 16–17 pueden ver perfiles de 12+; usuarios de 18+ pueden ver perfiles de 16+.
+   - **Chat directo:** 12–15 ↔ 12–17; 16–17 ↔ 12+; 18+ ↔ 16+. Un usuario de 12–15 no puede iniciar ni mantener chat directo con un usuario de 18+.
+   - Mantener funciones separadas para contenido público y chat/perfil; no usar una única regla de `same_space()` para todo.
 2. **Toda regla de acceso vive en RLS de Postgres**, no solo en el frontend. Toda tabla con RLS habilitado.
 3. **Perfiles de menores:** visibles solo para usuarios registrados del espacio `teen`. Nunca para visitantes sin cuenta. Mostrar nivel escolar, no la edad exacta.
 4. **Foto de boleta:** bucket privado. Solo el dueño y los moderadores pueden leerla (URLs firmadas). Se conserva como evidencia. Lo público es el promedio y el badge de verificado.
@@ -34,7 +37,7 @@ Red social para estudiantes (secundaria a universidad), estilo Facebook. Proyect
 - Promedio escolar visible para todos (dentro de su espacio), con foto de boleta como evidencia y badge "verificado" solo tras aprobación de un moderador
 - Fotos: **solo** avatar y boleta. Sin fotos en publicaciones ni chats. Sin videos.
 - Publicaciones de **solo texto**, con **comentarios** (sin likes)
-- Feed visible a desconocidos (del mismo espacio)
+- Feed visible a usuarios registrados de cualquier edad (12+), respetando bloqueos y estado de cuenta
 - Búsqueda de perfiles por intereses, qué busca, edad y promedio
 - Sugerencias de conexión: aleatorias totales o con filtros
 - Solicitudes de chat sin necesidad de ser amigos
@@ -69,7 +72,7 @@ Usa UUID como PK, `created_at timestamptz default now()`. Nombres en inglés.
 | `reports` | `id`, `reporter_id`, `reported_id`, `category_id`, `message`, `evidence_path`, `status` (`open`, `reviewing`, `resolved`, `dismissed`), `involves_minor` bool, `resolved_by`, `resolution_note` |
 | `moderation_actions` | `id`, `moderator_id`, `target_id`, `action` (`warn`, `suspend`, `ban`, `unban`), `report_id` nullable, `note` |
 
-Funciones auxiliares recomendadas: `is_blocked(a, b)`, `same_space(a, b)`, `is_moderator()`.
+Funciones auxiliares recomendadas: `is_blocked(a, b)`, `same_space(a, b)`, `can_view_content(a, b)`, `can_view_profile(a, b)`, `can_direct_chat(a, b)`, `is_moderator()`.
 
 ## 5. Storage
 
@@ -96,30 +99,30 @@ Funciones auxiliares recomendadas: `is_blocked(a, b)`, `same_space(a, b)`, `is_m
 - Carga de promedio + foto de boleta → crea `grade_verifications` en `pending`
 - RLS de perfiles según la sección 2 (visibilidad por espacio, menores ocultos a visitantes)
 
-**Aceptación:** un usuario teen no ve perfiles adult ni al revés; un visitante sin sesión no ve perfiles teen; la boleta no es accesible por URL pública.
+**Aceptación:** un usuario de 12–15 no ve perfiles 18+; un usuario de 16–17 puede ver perfiles tanto menores como adultos; un usuario 18+ solo ve perfiles 16+; visitantes sin sesión no ven perfiles de menores; la boleta no es accesible por URL pública.
 
 ### Fase 3 · Publicaciones
 - Crear, editar y borrar posts propios (solo texto)
 - Comentarios en posts
-- Feed cronológico del mismo espacio, excluyendo bloqueados, con paginación infinita
+- Feed cronológico compartido entre usuarios registrados de 12+, excluyendo bloqueados, con paginación infinita
 
-**Aceptación:** RLS impide leer posts o comentarios de otro espacio o de usuarios bloqueados.
+**Aceptación:** RLS permite leer y comentar posts entre edades distintas para usuarios registrados de 12+, pero impide contenido de usuarios bloqueados o cuentas no activas.
 
 ### Fase 4 · Búsqueda y sugerencias
 - Búsqueda por nombre/username (`pg_trgm`) con filtros: intereses, qué busca, rango de edad, promedio mínimo, solo verificados
 - Sugerencias: modo aleatorio total y modo con filtros; excluir a uno mismo, bloqueados y conversaciones ya existentes
 - Implementar como funciones RPC en Postgres
 
-**Aceptación:** ningún resultado cruza de espacio ni incluye bloqueados.
+**Aceptación:** búsqueda y sugerencias respetan la compatibilidad de edad: 12–15 → 12–17, 16–17 → 12+, 18+ → 16+; nunca incluyen bloqueados.
 
 ### Fase 5 · Chat 1 a 1 y bloqueos
-- Enviar solicitud de chat (solo si el destinatario tiene `accepts_message_requests = true`, mismo espacio y sin bloqueo — validado en RLS)
+- Enviar solicitud de chat solo si el destinatario tiene `accepts_message_requests = true`, `can_direct_chat(from_id, to_id)` devuelve true y no existe bloqueo — validado en RLS
 - Aceptar/rechazar solicitud → crea `conversation` tipo `direct`
 - Mensajes en tiempo real con Supabase Realtime (solo texto)
 - Bloquear/desbloquear desde perfil y chat; el bloqueo oculta perfil, posts y comentarios, y corta el chat
 - Si el perfil no acepta solicitudes, mostrar "No recibe solicitudes" en lugar del botón
 
-**Aceptación:** un usuario bloqueado no puede enviar mensajes ni ver el perfil; insertar una solicitud vía API directa con el switch apagado falla.
+**Aceptación:** un usuario bloqueado no puede enviar mensajes ni ver el perfil; 12–15 no puede chatear con 18+; 16–17 sí puede chatear con menores y adultos; insertar una solicitud vía API directa con el switch apagado falla.
 
 ### Fase 6 · Grupos
 - Listado y búsqueda de grupos del mismo espacio
