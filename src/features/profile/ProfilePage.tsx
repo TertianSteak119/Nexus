@@ -40,6 +40,7 @@ export function ProfilePage() {
   const [feedback, setFeedback] = useState('')
   const [error, setError] = useState('')
   const [loadingProfile, setLoadingProfile] = useState(true)
+  const [blockedProfiles, setBlockedProfiles] = useState<{ id: string; username: string; full_name: string; avatar_path: string | null }[]>([])
 
   useEffect(() => {
     let active = true
@@ -81,6 +82,8 @@ export function ProfilePage() {
         setLookingFor(lookingForData.map((item) => item.kind))
         setOtherLookingFor(lookingForData.find((item) => item.kind === 'other')?.other_text ?? '')
       }
+      const { data: blockedData } = await supabase.rpc('list_blocked_profiles')
+      if (blockedData) setBlockedProfiles(blockedData)
       setLoadingProfile(false)
     }
 
@@ -162,6 +165,22 @@ export function ProfilePage() {
     setFeedback('Perfil guardado correctamente.')
   }
 
+  async function unblockProfile(profileId: string) {
+    if (!user) return
+    setError('')
+    const { error: unblockError } = await supabase
+      .from('blocks')
+      .delete()
+      .eq('blocker_id', user.id)
+      .eq('blocked_id', profileId)
+    if (unblockError) {
+      setError(unblockError.message)
+      return
+    }
+    setBlockedProfiles((current) => current.filter((profile) => profile.id !== profileId))
+    setFeedback('Usuario desbloqueado.')
+  }
+
   if (!user) {
     return <div className="mx-auto max-w-xl py-12 text-center"><h1 className="font-display text-4xl font-bold text-[var(--nexus-navy)]">Perfil</h1><p className="mt-4 text-[var(--nexus-muted)]">Inicia sesión para completar tu perfil.</p></div>
   }
@@ -194,6 +213,31 @@ export function ProfilePage() {
         {feedback && <p role="status" className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700 sm:col-span-2">{feedback}</p>}
         <button className="rounded-xl bg-[var(--nexus-coral)] px-4 py-3 font-bold text-white hover:bg-[#d95a42] sm:col-span-2">Guardar perfil</button>
       </form>
+
+      <section className="mt-8 rounded-3xl border border-[var(--nexus-line)] bg-white p-6 sm:p-8">
+        <div>
+          <p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--nexus-coral)]">Privacidad</p>
+          <h2 className="mt-2 font-display text-2xl font-bold text-[var(--nexus-navy)]">Usuarios bloqueados</h2>
+          <p className="mt-2 text-sm text-[var(--nexus-muted)]">Puedes desbloquearlos en cualquier momento.</p>
+        </div>
+        <div className="mt-5 grid gap-3">
+          {blockedProfiles.length ? blockedProfiles.map((profile) => (
+            <div key={profile.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[var(--nexus-paper)] p-4">
+              <div>
+                <p className="font-bold text-[var(--nexus-navy)]">{profile.full_name}</p>
+                <p className="text-sm text-[var(--nexus-muted)]">@{profile.username}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void unblockProfile(profile.id)}
+                className="rounded-xl bg-[var(--nexus-navy)] px-4 py-2 text-sm font-bold text-white"
+              >
+                Desbloquear
+              </button>
+            </div>
+          )) : <p className="rounded-2xl border border-dashed border-[var(--nexus-line)] p-5 text-sm text-[var(--nexus-muted)]">No tienes usuarios bloqueados.</p>}
+        </div>
+      </section>
     </section>
   )
 }
