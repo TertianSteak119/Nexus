@@ -78,7 +78,7 @@ export function AuthPage() {
         })
         if (notifyError) console.error('No se pudo enviar el aviso de registro:', notifyError.message)
       }
-      setMessage('A espera de que la solicitud sea aprobada')
+      setMessage('Solicitud enviada. Confirmar tu correo no aprueba la cuenta; solo el administrador de Nexus puede autorizar el acceso.')
     }
   }
 
