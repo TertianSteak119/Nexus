@@ -6,6 +6,7 @@ import { HomePage } from './pages/HomePage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
 import { AuthPage } from './features/auth/AuthPage'
 import { AccountApprovalPage } from './features/auth/AccountApprovalPage'
+import { ResetPasswordPage } from './features/auth/ResetPasswordPage'
 import { AuthProvider } from './features/auth/AuthContext'
 import { useAuth } from './features/auth/useAuth'
 import { ProfilePage } from './features/profile/ProfilePage'
@@ -85,6 +86,12 @@ export function App() {
 
   if (loading || (user && (approvalStatus === null || (approvalStatus === 'approved' && profileReady === null)))) {
     return <div className="grid min-h-screen place-items-center bg-[var(--nexus-paper)] text-sm font-semibold text-[var(--nexus-muted)]">Cargando Nexus...</div>
+  }
+
+  const recoveryMode = new URLSearchParams(window.location.search).get('mode') === 'recovery'
+
+  if (user && recoveryMode) {
+    return <ResetPasswordPage />
   }
 
   if (user && approvalStatus && approvalStatus !== 'approved') {
