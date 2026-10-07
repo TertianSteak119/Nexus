@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
+import { ReportButton } from '../moderation/ReportButton'
 
 type PublicProfile = {
   id: string
@@ -133,7 +134,10 @@ export function PublicProfilePage() {
             <h1 className="mt-4 font-display text-3xl font-bold text-[var(--nexus-navy)]">{profile.full_name}</h1>
             <p className="text-[var(--nexus-muted)]">@{profile.username}</p>
           </div>
-          <button onClick={() => void block()} className="rounded-xl border border-red-200 px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-50">Bloquear</button>
+          <div className="flex gap-2">
+            <ReportButton reportedId={profile.id} targetKind="profile" targetId={profile.id} />
+            <button onClick={() => void block()} className="rounded-xl border border-red-200 px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-50">Bloquear</button>
+          </div>
         </div>
 
         {profile.bio && <p className="mt-6 leading-7 text-[var(--nexus-ink)]">{profile.bio}</p>}
