@@ -27,13 +27,9 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
-  const resendApiKey = Deno.env.get("RESEND_API_KEY")
-  const moderatorEmail = Deno.env.get("MODERATOR_EMAIL") ?? "erickjohn96357@gmail.com"
-  const fromEmail = Deno.env.get("REPORT_FROM_EMAIL") ?? "Nexus <onboarding@resend.dev>"
-  const appUrl = Deno.env.get("APP_URL") ?? "https://tertiansteak119.github.io/Nexus/"
 
-  if (!supabaseUrl || !serviceRoleKey || !resendApiKey) {
-    return json({ error: "EMAIL_NOT_CONFIGURED" }, 503)
+  if (!supabaseUrl || !serviceRoleKey) {
+    return json({ error: "BACKEND_NOT_CONFIGURED" }, 503)
   }
 
   let payload: { report_id?: string }
@@ -48,6 +44,17 @@ Deno.serve(async (req) => {
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
+
+  const { data: configRows, error: configError } = await supabase.rpc("get_report_email_config")
+  const config = Array.isArray(configRows) ? configRows[0] : configRows
+  const resendApiKey = config?.resend_api_key as string | undefined
+  const moderatorEmail = (config?.moderator_email as string | undefined) ?? "erickjohn96357@gmail.com"
+  const fromEmail = (config?.report_from_email as string | undefined) ?? "Nexus <onboarding@resend.dev>"
+  const appUrl = (config?.app_url as string | undefined) ?? "https://tertiansteak119.github.io/Nexus/"
+
+  if (configError || !resendApiKey) {
+    return json({ error: "EMAIL_NOT_CONFIGURED" }, 503)
+  }
 
   const { data: claimed, error: claimError } = await supabase
     .from("report_notifications")
