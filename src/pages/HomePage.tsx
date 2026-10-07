@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 export function HomePage() {
   return (
     <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
@@ -9,12 +11,12 @@ export function HomePage() {
           Nexus conecta estudiantes con intereses, proyectos y conversaciones que tienen sentido.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
-          <a href="/profile" className="rounded-full bg-[var(--nexus-coral)] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-orange-200 transition hover:-translate-y-0.5 hover:bg-[#d95a42]">
+          <Link to="/profile" className="rounded-full bg-[var(--nexus-coral)] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-orange-200 transition hover:-translate-y-0.5 hover:bg-[#d95a42]">
             Explorar mi perfil
-          </a>
-          <a href="/discover" className="rounded-full border border-[var(--nexus-line)] bg-white px-5 py-3 text-sm font-bold text-[var(--nexus-navy)] transition hover:border-[var(--nexus-navy)]">
+          </Link>
+          <Link to="/discover" className="rounded-full border border-[var(--nexus-line)] bg-white px-5 py-3 text-sm font-bold text-[var(--nexus-navy)] transition hover:border-[var(--nexus-navy)]">
             Descubrir personas
-          </a>
+          </Link>
         </div>
       </div>
 
