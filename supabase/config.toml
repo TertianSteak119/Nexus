@@ -28,8 +28,12 @@ enabled = true
 
 [auth]
 enabled = true
-site_url = "http://localhost:5173"
-additional_redirect_urls = ["http://localhost:5173/**"]
+site_url = "https://tertiansteak119.github.io/Nexus/"
+additional_redirect_urls = [
+  "https://tertiansteak119.github.io/Nexus/",
+  "https://tertiansteak119.github.io/Nexus/**",
+  "http://localhost:5173/**"
+]
 
 [analytics]
 enabled = false
