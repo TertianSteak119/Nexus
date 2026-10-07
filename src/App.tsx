@@ -5,6 +5,7 @@ import { AppShell } from './components/AppShell'
 import { HomePage } from './pages/HomePage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
 import { AuthPage } from './features/auth/AuthPage'
+import { AccountApprovalPage } from './features/auth/AccountApprovalPage'
 import { AuthProvider } from './features/auth/AuthContext'
 import { useAuth } from './features/auth/useAuth'
 import { ProfilePage } from './features/profile/ProfilePage'
@@ -19,17 +20,42 @@ import { supabase } from './lib/supabase'
 
 const queryClient = new QueryClient()
 
+type ApprovalStatus = 'pending' | 'approved' | 'rejected'
+
 export function App() {
   const { loading, user } = useAuth()
+  const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus | null>(null)
   const [profileReady, setProfileReady] = useState<boolean | null>(null)
 
   useEffect(() => {
     let active = true
     let timer: number | undefined
 
-    async function checkProfile() {
+    async function checkAccess() {
       if (!user) {
-        if (active) setProfileReady(false)
+        if (active) {
+          setApprovalStatus(null)
+          setProfileReady(false)
+        }
+        return
+      }
+
+      const { data: approvalData, error: approvalError } = await supabase
+        .from('account_approvals')
+        .select('status')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (!active) return
+
+      const nextApproval = (!approvalError && approvalData?.status
+        ? approvalData.status
+        : 'pending') as ApprovalStatus
+
+      setApprovalStatus(nextApproval)
+
+      if (nextApproval !== 'approved') {
+        setProfileReady(false)
         return
       }
 
@@ -43,12 +69,13 @@ export function App() {
       setProfileReady(ready)
 
       if (!ready) {
-        timer = window.setTimeout(() => void checkProfile(), 1500)
+        timer = window.setTimeout(() => void checkAccess(), 1500)
       }
     }
 
+    setApprovalStatus(user ? null : null)
     setProfileReady(user ? null : false)
-    void checkProfile()
+    void checkAccess()
 
     return () => {
       active = false
@@ -56,11 +83,15 @@ export function App() {
     }
   }, [user])
 
-  if (loading || (user && profileReady === null)) {
+  if (loading || (user && (approvalStatus === null || (approvalStatus === 'approved' && profileReady === null)))) {
     return <div className="grid min-h-screen place-items-center bg-[var(--nexus-paper)] text-sm font-semibold text-[var(--nexus-muted)]">Cargando Nexus...</div>
   }
 
-  const needsProfile = Boolean(user && !profileReady)
+  if (user && approvalStatus && approvalStatus !== 'approved') {
+    return <AccountApprovalPage status={approvalStatus} />
+  }
+
+  const needsProfile = Boolean(user && approvalStatus === 'approved' && !profileReady)
 
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
