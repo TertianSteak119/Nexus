@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 
 type Summary = {
   total_users: number
+  pending_account_approvals: number
   reported_accounts: number
   pending_reports: number
   priority_reports: number
@@ -10,6 +11,16 @@ type Summary = {
   pending_grade_verifications: number
   admin_suggestions: number
   group_suggestions: number
+}
+
+type AccountApproval = {
+  user_id: string
+  email: string
+  full_name: string
+  status: 'pending' | 'approved' | 'rejected'
+  requested_at: string
+  reviewed_at: string | null
+  review_note: string | null
 }
 
 type Report = {
@@ -73,6 +84,7 @@ type GroupSuggestion = {
 export function AdminConsolePage() {
   const [access, setAccess] = useState<'checking' | 'locked' | 'granted'>('checking')
   const [summary, setSummary] = useState<Summary | null>(null)
+  const [accountApprovals, setAccountApprovals] = useState<AccountApproval[]>([])
   const [reports, setReports] = useState<Report[]>([])
   const [gradeVerifications, setGradeVerifications] = useState<GradeVerification[]>([])
   const [banned, setBanned] = useState<BannedAccount[]>([])
@@ -93,8 +105,9 @@ export function AdminConsolePage() {
 
     setAccess('granted')
 
-    const [summaryResult, reportsResult, gradeResult, bannedResult, suggestionsResult, groupSuggestionsResult] = await Promise.all([
+    const [summaryResult, approvalsResult, reportsResult, gradeResult, bannedResult, suggestionsResult, groupSuggestionsResult] = await Promise.all([
       supabase.rpc('admin_console_summary'),
+      supabase.rpc('admin_list_account_approvals'),
       supabase.rpc('admin_list_reports', { filter_status: reportStatus || null, minors_only: minorsOnly }),
       supabase.rpc('admin_list_grade_verifications'),
       supabase.rpc('admin_list_banned_accounts'),
@@ -104,6 +117,7 @@ export function AdminConsolePage() {
 
     const firstError =
       summaryResult.error ??
+      approvalsResult.error ??
       reportsResult.error ??
       gradeResult.error ??
       bannedResult.error ??
@@ -116,6 +130,7 @@ export function AdminConsolePage() {
     }
 
     setSummary(summaryResult.data as Summary)
+    setAccountApprovals((approvalsResult.data ?? []) as AccountApproval[])
     setReports((reportsResult.data ?? []) as Report[])
     setGradeVerifications((gradeResult.data ?? []) as GradeVerification[])
     setBanned((bannedResult.data ?? []) as BannedAccount[])
@@ -126,6 +141,20 @@ export function AdminConsolePage() {
   useEffect(() => {
     void load()
   }, [load])
+
+  async function reviewAccount(item: AccountApproval, approve: boolean) {
+    const note = window.prompt(approve ? 'Nota de aprobación (opcional):' : 'Motivo del rechazo (opcional):', '') ?? ''
+    const { error: reviewError } = await supabase.rpc('admin_review_account_approval', {
+      target_user: item.user_id,
+      approve,
+      note,
+    })
+    if (reviewError) setError(reviewError.message)
+    else {
+      setFeedback(approve ? 'Cuenta aprobada.' : 'Solicitud rechazada.')
+      await load()
+    }
+  }
 
   async function changeReportStatus(report: Report, status: string) {
     const note = window.prompt('Nota de revisión (opcional):', report.resolution_note ?? '') ?? ''
@@ -207,6 +236,7 @@ export function AdminConsolePage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Usuarios registrados" value={summary?.total_users ?? 0} />
+        <Stat label="Solicitudes pendientes" value={summary?.pending_account_approvals ?? 0} />
         <Stat label="Cuentas reportadas" value={summary?.reported_accounts ?? 0} />
         <Stat label="Reportes pendientes" value={summary?.pending_reports ?? 0} />
         <Stat label="Reportes prioritarios" value={summary?.priority_reports ?? 0} />
@@ -215,6 +245,17 @@ export function AdminConsolePage() {
         <Stat label="Sugerencias admin" value={summary?.admin_suggestions ?? 0} />
         <Stat label="Sugerencias de grupos" value={summary?.group_suggestions ?? 0} />
       </div>
+
+      <AdminTable title="Solicitudes de acceso" empty="No hay solicitudes pendientes.">
+        {accountApprovals.filter((item) => item.status === 'pending').map((item) => (
+          <Row key={item.user_id} title={item.full_name} subtitle={`${item.email} · ${new Date(item.requested_at).toLocaleString('es-MX')}`}>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => void reviewAccount(item, true)} className="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-white">Aprobar acceso</button>
+              <button onClick={() => void reviewAccount(item, false)} className="rounded-xl bg-red-700 px-3 py-2 text-xs font-bold text-white">Rechazar</button>
+            </div>
+          </Row>
+        ))}
+      </AdminTable>
 
       <section className="rounded-3xl border border-[var(--nexus-line)] bg-white p-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
