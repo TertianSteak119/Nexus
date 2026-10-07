@@ -36,7 +36,7 @@ export function AuthPage() {
         return
       }
       setSubmitting(true)
-      const resetResponse = await supabase.auth.resetPasswordForEmail(emailResult.data, { redirectTo: publicAppUrl() })
+      const resetResponse = await supabase.auth.resetPasswordForEmail(emailResult.data, { redirectTo: `${publicAppUrl()}?mode=recovery` })
       setSubmitting(false)
       if (resetResponse.error) setError(resetResponse.error.message)
       else setMessage('Te enviamos un enlace para recuperar tu contraseña.')
