@@ -36,7 +36,7 @@ export function AuthPage() {
         return
       }
       setSubmitting(true)
-      const resetResponse = await supabase.auth.resetPasswordForEmail(emailResult.data, { redirectTo: `${window.location.origin}/profile` })
+      const resetResponse = await supabase.auth.resetPasswordForEmail(emailResult.data, { redirectTo: publicAppUrl() })
       setSubmitting(false)
       if (resetResponse.error) setError(resetResponse.error.message)
       else setMessage('Te enviamos un enlace para recuperar tu contraseña.')
@@ -61,7 +61,10 @@ export function AuthPage() {
       : await supabase.auth.signUp({
           email: result.data.email,
           password: result.data.password,
-          options: { data: { full_name: fullName.trim() } },
+          options: {
+            data: { full_name: fullName.trim() },
+            emailRedirectTo: publicAppUrl(),
+          },
         })
     setSubmitting(false)
     if (response.error) {
@@ -115,4 +118,8 @@ export function AuthPage() {
       </form>
     </section>
   )
+}
+
+function publicAppUrl() {
+  return new URL(import.meta.env.BASE_URL, window.location.origin).toString()
 }
