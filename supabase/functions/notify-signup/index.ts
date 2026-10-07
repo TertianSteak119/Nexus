@@ -1,7 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const RECIPIENT = "erickjohn96357@gmail.com";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -46,18 +45,23 @@ Deno.serve(async (req: Request) => {
       last_error: null,
     });
 
-    const resendKey = Deno.env.get("RESEND_API_KEY");
-    if (!resendKey) {
+    const { data: configRows, error: configError } = await admin.rpc("get_report_email_config");
+    const config = Array.isArray(configRows) ? configRows[0] : configRows;
+    const resendKey = config?.resend_api_key as string | undefined;
+    const recipient = (config?.moderator_email as string | undefined) ?? "erickjohn96357@gmail.com";
+    const from = (config?.report_from_email as string | undefined) ?? "Nexus <onboarding@resend.dev>";
+    const appUrl = (config?.app_url as string | undefined) ?? "https://tertiansteak119.github.io/Nexus/";
+
+    if (configError || !resendKey) {
       await admin.from("signup_notifications").update({
         status: "failed",
-        last_error: "RESEND_API_KEY is not configured",
+        last_error: "Resend configuration is unavailable",
       }).eq("user_id", user.id);
       return json({ error: "Email provider is not configured" }, 503);
     }
 
     const fullName = String(user.user_metadata?.full_name ?? "No especificado");
     const email = String(user.email ?? "No disponible");
-    const from = Deno.env.get("SIGNUP_FROM_EMAIL") ?? "Nexus <onboarding@resend.dev>";
 
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -67,15 +71,18 @@ Deno.serve(async (req: Request) => {
       },
       body: JSON.stringify({
         from,
-        to: [RECIPIENT],
-        subject: "Nueva solicitud de creación de cuenta en Nexus",
+        to: [recipient],
+        subject: "Nueva solicitud de acceso a Nexus",
         html: `
-          <h2>Nueva solicitud de creación de cuenta en Nexus</h2>
+          <h2>Nueva solicitud de acceso a Nexus</h2>
           <p><strong>Nombre:</strong> ${escapeHtml(fullName)}</p>
           <p><strong>Correo:</strong> ${escapeHtml(email)}</p>
           <p><strong>ID de usuario:</strong> ${escapeHtml(user.id)}</p>
           <p><strong>Fecha y hora de registro:</strong> ${escapeHtml(user.created_at)}</p>
-          <p>Este aviso se genera únicamente al crear una cuenta nueva. La contraseña nunca se incluye.</p>
+          <p><strong>Estado:</strong> Pendiente de aprobación administrativa.</p>
+          <p>Confirmar el correo del usuario no autoriza su acceso. Solo el administrador puede aprobar esta solicitud.</p>
+          <p><a href="${escapeHtml(appUrl.replace(/\/$/, "") + "/control")}">Abrir panel de administración</a></p>
+          <p>La contraseña nunca se incluye.</p>
         `,
       }),
     });
