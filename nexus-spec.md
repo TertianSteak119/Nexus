@@ -141,6 +141,8 @@ Funciones auxiliares recomendadas: `is_blocked(a, b)`, `same_space(a, b)`, `can_
 **Aceptación:** un usuario normal no puede crear grupos ni unirse a un grupo de otro espacio aunque llame la API directamente; el chat grupal solo funciona para miembros.
 
 ### Fase 7 · Moderación
+**Estado: en implementación.**
+
 - Botón de reporte en perfiles, posts, comentarios y mensajes: categoría, mensaje y foto de evidencia
 - `involves_minor = true` si reportante o reportado está en espacio `teen`; esos reportes aparecen primero
 - Database Webhook en `INSERT` de `reports` → Edge Function `notify-report` que envía correo con Resend a `MODERATOR_EMAIL`:
