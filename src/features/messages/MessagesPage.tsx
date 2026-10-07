@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
+import { ReportButton } from '../moderation/ReportButton'
 
 type DirectConversation = {
   conversation_id: string
@@ -263,8 +264,11 @@ export function MessagesPage() {
               <div className="flex-1 space-y-3 overflow-y-auto bg-[var(--nexus-paper)] p-4">
                 {messages.length ? messages.map((message) => (
                   <div key={message.id} className={`flex ${message.sender_id === user.id ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.sender_id === user.id ? 'bg-[var(--nexus-navy)] text-white' : 'border border-[var(--nexus-line)] bg-white text-[var(--nexus-ink)]'}`}>
-                      {message.body}
+                    <div className="max-w-[82%]">
+                      <div className={`rounded-2xl px-4 py-3 text-sm leading-6 ${message.sender_id === user.id ? 'bg-[var(--nexus-navy)] text-white' : 'border border-[var(--nexus-line)] bg-white text-[var(--nexus-ink)]'}`}>
+                        {message.body}
+                      </div>
+                      {message.sender_id !== user.id && selectedConversation && <div className="mt-1 px-1"><ReportButton reportedId={selectedConversation.other_id} targetKind="message" targetId={message.id} compact /></div>}
                     </div>
                   </div>
                 )) : <p className="py-10 text-center text-sm text-[var(--nexus-muted)]">Todavía no hay mensajes. Di hola.</p>}
