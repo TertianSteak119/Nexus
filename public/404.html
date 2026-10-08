@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nexus</title>
+    <script>
+      (function () {
+        var base = '/Nexus/'
+        var path = window.location.pathname.indexOf(base) === 0
+          ? window.location.pathname.slice(base.length)
+          : ''
+        var target = base + '?spa=' + encodeURIComponent(path + window.location.search + window.location.hash)
+        window.location.replace(target)
+      })()
+    </script>
+  </head>
+  <body></body>
+</html>
