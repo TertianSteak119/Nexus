@@ -24,13 +24,51 @@ Deno.serve(async (req: Request) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const { data: userResult, error: userError } = await admin.auth.admin.getUserById(user_id);
+    const authHeader = req.headers.get("authorization") ?? "";
+    const accessToken = authHeader.replace(/^Bearer\s+/i, "");
+    const { data: callerData, error: callerError } = await admin.auth.getUser(accessToken);
+    if (callerError || !callerData.user || callerData.user.id !== user_id) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+
+    const [{ data: userResult, error: userError }, { data: approval, error: approvalError }] = await Promise.all([
+      admin.auth.admin.getUserById(user_id),
+      admin.from("account_approvals").select("status").eq("user_id", user_id).maybeSingle(),
+    ]);
+
     const user = userResult?.user;
     if (userError || !user) return json({ error: "User not found" }, 404);
+    if (approvalError || approval?.status !== "pending") return json({ error: "Account is not pending approval" }, 409);
 
-    const createdAt = new Date(user.created_at).getTime();
-    if (!Number.isFinite(createdAt) || Date.now() - createdAt > 15 * 60 * 1000) {
-      return json({ error: "Notification window expired" }, 403);
+    const [
+      { data: profile, error: profileError },
+      { data: interestRows, error: interestsError },
+      { data: lookingRows, error: lookingError },
+      { data: gradeRows, error: gradeError },
+    ] = await Promise.all([
+      admin.from("profiles").select("username, full_name, birth_date, school_level, school_name, bio, avatar_path, accepts_message_requests, gpa").eq("id", user_id).maybeSingle(),
+      admin.from("profile_interests").select("interests(name)").eq("profile_id", user_id),
+      admin.from("profile_looking_for").select("kind, other_text").eq("profile_id", user_id),
+      admin.from("grade_verifications").select("id, status, image_path, created_at").eq("profile_id", user_id).order("created_at", { ascending: false }).limit(1),
+    ]);
+
+    const latestGrade = gradeRows?.[0] ?? null;
+    const interestNames = (interestRows ?? [])
+      .map((row: any) => row.interests?.name)
+      .filter((name: unknown): name is string => typeof name === "string" && name.length > 0);
+    const lookingFor = (lookingRows ?? []).map((row: any) => {
+      if (row.kind === "friends") return "Amigos";
+      if (row.kind === "projects") return "Proyectos";
+      if (row.kind === "study_groups") return "Grupos de estudio";
+      if (row.kind === "other") return `Otro: ${String(row.other_text ?? "")}`;
+      return String(row.kind);
+    });
+
+    if (
+      profileError || interestsError || lookingError || gradeError ||
+      !profile || profile.gpa == null || !interestNames.length || !lookingFor.length || !latestGrade?.image_path
+    ) {
+      return json({ error: "Profile application is incomplete" }, 409);
     }
 
     const { data: existing } = await admin
@@ -50,14 +88,14 @@ Deno.serve(async (req: Request) => {
     const { data: configRows, error: configError } = await admin.rpc("get_report_email_config");
     const config = Array.isArray(configRows) ? configRows[0] : configRows;
     const resendKey = config?.resend_api_key as string | undefined;
-    const recipient = (config?.moderator_email as string | undefined) ?? "erickjohn96357@gmail.com";
-    const from = (config?.report_from_email as string | undefined) ?? "Nexus <onboarding@resend.dev>";
+    const recipient = config?.moderator_email as string | undefined;
+    const from = config?.report_from_email as string | undefined;
     const appUrl = (config?.app_url as string | undefined) ?? "https://tertiansteak119.github.io/Nexus/";
 
-    if (configError || !resendKey) {
+    if (configError || !resendKey || !recipient || !from) {
       await admin.from("signup_notifications").update({
         status: "failed",
-        last_error: "Resend configuration is unavailable",
+        last_error: "Email configuration is unavailable",
       }).eq("user_id", user.id);
       return json({ error: "Email provider is not configured" }, 503);
     }
@@ -99,8 +137,57 @@ Deno.serve(async (req: Request) => {
     const approveUrl = `${approvalBase}?token=${encodeURIComponent(approveToken)}`;
     const rejectUrl = `${approvalBase}?token=${encodeURIComponent(rejectToken)}`;
 
-    const fullName = String(user.user_metadata?.full_name ?? "No especificado");
+    const age = calculateAge(String(profile.birth_date));
+    const attachments: Array<{ filename: string; content: string }> = [];
+
+    const { data: evidenceBlob, error: evidenceError } = await admin.storage
+      .from("boletas")
+      .download(String(latestGrade.image_path));
+
+    if (!evidenceError && evidenceBlob) {
+      attachments.push({
+        filename: `comprobante-${profile.username || "solicitud"}.${fileExtension(String(latestGrade.image_path))}`,
+        content: arrayBufferToBase64(await evidenceBlob.arrayBuffer()),
+      });
+    }
+
     const email = String(user.email ?? "No disponible");
+    const optionalBio = profile.bio ? `<p><strong>Bio:</strong> ${escapeHtml(String(profile.bio))}</p>` : "";
+    const avatarNote = profile.avatar_path ? "Sí" : "No (opcional)";
+
+    const payload: Record<string, unknown> = {
+      from,
+      to: [recipient],
+      subject: `Nueva solicitud de acceso a Nexus · ${profile.full_name}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;line-height:1.6;color:#18344d">
+          <h2>Nueva solicitud de acceso a Nexus</h2>
+          <p>La solicitud ya está completa y lista para revisión.</p>
+          <hr style="border:0;border-top:1px solid #dbe3e8;margin:20px 0">
+          <p><strong>Nombre:</strong> ${escapeHtml(String(profile.full_name))}</p>
+          <p><strong>Usuario:</strong> @${escapeHtml(String(profile.username))}</p>
+          <p><strong>Correo:</strong> ${escapeHtml(email)}</p>
+          <p><strong>Fecha de nacimiento:</strong> ${escapeHtml(String(profile.birth_date))} · ${age} años</p>
+          <p><strong>Nivel escolar:</strong> ${escapeHtml(String(profile.school_level))}</p>
+          <p><strong>Escuela:</strong> ${escapeHtml(String(profile.school_name))}</p>
+          <p><strong>Promedio declarado:</strong> ${escapeHtml(String(profile.gpa))}</p>
+          <p><strong>Intereses:</strong> ${escapeHtml(interestNames.join(", "))}</p>
+          <p><strong>Busca:</strong> ${escapeHtml(lookingFor.join(", "))}</p>
+          <p><strong>Recibe solicitudes de mensaje:</strong> ${profile.accepts_message_requests ? "Sí" : "No"}</p>
+          <p><strong>Avatar:</strong> ${avatarNote}</p>
+          ${optionalBio}
+          <p><strong>Comprobante:</strong> ${attachments.length ? "Adjunto a este correo" : "Disponible en el panel de administración"}</p>
+          <p style="margin-top:24px">
+            <a href="${escapeHtml(approveUrl)}" style="display:inline-block;margin-right:10px;padding:12px 18px;border-radius:10px;background:#047857;color:white;text-decoration:none;font-weight:700">Aprobar cuenta</a>
+            <a href="${escapeHtml(rejectUrl)}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#b91c1c;color:white;text-decoration:none;font-weight:700">Rechazar cuenta</a>
+          </p>
+          <p style="margin-top:24px"><a href="${escapeHtml(appUrl.replace(/\/$/, "") + "/control")}">Abrir panel de administración</a></p>
+          <p style="font-size:12px;color:#6b7280">Aprobar la cuenta también valida el comprobante inicial de promedio. Los enlaces vencen en 7 días y requieren confirmación adicional.</p>
+        </div>
+      `,
+    };
+
+    if (attachments.length) payload.attachments = attachments;
 
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -108,28 +195,7 @@ Deno.serve(async (req: Request) => {
         Authorization: `Bearer ${resendKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        from,
-        to: [recipient],
-        subject: "Nueva solicitud de acceso a Nexus",
-        html: `
-          <div style="font-family:Arial,sans-serif;line-height:1.6;color:#18344d">
-            <h2>Nueva solicitud de acceso a Nexus</h2>
-            <p><strong>Nombre:</strong> ${escapeHtml(fullName)}</p>
-            <p><strong>Correo:</strong> ${escapeHtml(email)}</p>
-            <p><strong>ID de usuario:</strong> ${escapeHtml(user.id)}</p>
-            <p><strong>Fecha y hora de registro:</strong> ${escapeHtml(user.created_at)}</p>
-            <p><strong>Estado:</strong> Pendiente de aprobación administrativa.</p>
-            <p>Confirmar el correo del usuario no autoriza su acceso. Solo el administrador puede aprobar esta solicitud.</p>
-            <p style="margin-top:24px">
-              <a href="${escapeHtml(approveUrl)}" style="display:inline-block;margin-right:10px;padding:12px 18px;border-radius:10px;background:#047857;color:white;text-decoration:none;font-weight:700">Aprobar cuenta</a>
-              <a href="${escapeHtml(rejectUrl)}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#b91c1c;color:white;text-decoration:none;font-weight:700">Rechazar cuenta</a>
-            </p>
-            <p style="margin-top:24px"><a href="${escapeHtml(appUrl.replace(/\/$/, "") + "/control")}">Abrir panel de administración</a></p>
-            <p style="font-size:12px;color:#6b7280">Los enlaces vencen en 7 días y requieren una confirmación adicional antes de ejecutar la acción. La contraseña nunca se incluye.</p>
-          </div>
-        `,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const resendBody = await resendResponse.text();
@@ -164,6 +230,31 @@ function randomToken() {
 async function sha256(value: string) {
   const digest = await crypto.subtle.digest("SHA-256", encoder.encode(value));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function calculateAge(birthDate: string) {
+  const birth = new Date(`${birthDate}T00:00:00Z`);
+  const today = new Date();
+  let age = today.getUTCFullYear() - birth.getUTCFullYear();
+  const beforeBirthday = today.getUTCMonth() < birth.getUTCMonth() ||
+    (today.getUTCMonth() === birth.getUTCMonth() && today.getUTCDate() < birth.getUTCDate());
+  if (beforeBirthday) age -= 1;
+  return age;
+}
+
+function fileExtension(path: string) {
+  const extension = path.split(".").pop()?.toLowerCase() ?? "jpg";
+  return ["jpg", "jpeg", "png", "webp"].includes(extension) ? extension : "jpg";
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunk = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(index, Math.min(index + chunk, bytes.length)));
+  }
+  return btoa(binary);
 }
 
 function json(body: unknown, status = 200) {
