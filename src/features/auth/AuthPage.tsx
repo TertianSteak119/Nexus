@@ -36,10 +36,12 @@ export function AuthPage() {
         return
       }
       setSubmitting(true)
-      const resetResponse = await supabase.auth.resetPasswordForEmail(emailResult.data, { redirectTo: `${publicAppUrl()}?mode=recovery` })
+      const { error: resetError } = await supabase.functions.invoke('request-password-reset', {
+        body: { email: emailResult.data },
+      })
       setSubmitting(false)
-      if (resetResponse.error) setError(resetResponse.error.message)
-      else setMessage('Te enviamos un enlace para recuperar tu contraseña.')
+      if (resetError) setError('No pudimos enviar el correo de recuperación. Intenta nuevamente en unos minutos.')
+      else setMessage('Si existe una cuenta con ese correo, te enviamos un enlace para restablecer tu contraseña.')
       return
     }
     if (mode === 'signup' && fullName.trim().length < 2) {
