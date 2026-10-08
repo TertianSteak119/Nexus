@@ -32,8 +32,10 @@ export function RequestsPage() {
   const load = useCallback(async () => {
     setError('')
 
-    const { data: moderator, error: moderatorError } = await supabase.rpc('is_moderator')
-    if (moderatorError || !moderator) {
+    const { data: adminRows, error: adminError } = await supabase.rpc('current_admin_state')
+    const adminState = Array.isArray(adminRows) ? adminRows[0] : adminRows
+
+    if (adminError || !adminState?.is_admin) {
       setAllowed(false)
       setLoading(false)
       return
