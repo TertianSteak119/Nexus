@@ -75,14 +75,14 @@ export function App() {
     }
   }, [user])
 
-  if (loading || (user && (approvalStatus === null || profileReady === null))) {
-    return <div className="grid min-h-screen place-items-center bg-[var(--nexus-paper)] text-sm font-semibold text-[var(--nexus-muted)]">Cargando Nexus...</div>
-  }
-
   const recoveryMode = new URLSearchParams(window.location.search).get('mode') === 'recovery'
 
-  if (user && recoveryMode) {
+  if (recoveryMode) {
     return <ResetPasswordPage />
+  }
+
+  if (loading || (user && (approvalStatus === null || profileReady === null))) {
+    return <div className="grid min-h-screen place-items-center bg-[var(--nexus-paper)] text-sm font-semibold text-[var(--nexus-muted)]">Cargando Nexus...</div>
   }
 
   if (user && approvalStatus === 'rejected') {
