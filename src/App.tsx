@@ -41,40 +41,31 @@ export function App() {
         return
       }
 
-      const { data: approvalData, error: approvalError } = await supabase
-        .from('account_approvals')
-        .select('status')
-        .eq('user_id', user.id)
-        .maybeSingle()
+      const [{ data: approvalData, error: approvalError }, { data: applicationReady, error: applicationError }] = await Promise.all([
+        supabase
+          .from('account_approvals')
+          .select('status')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+        supabase.rpc('is_profile_application_complete', { target_user: user.id }),
+      ])
 
       if (!active) return
 
       const nextApproval = (!approvalError && approvalData?.status
         ? approvalData.status
         : 'pending') as ApprovalStatus
+      const nextProfileReady = !applicationError && Boolean(applicationReady)
 
       setApprovalStatus(nextApproval)
+      setProfileReady(nextProfileReady)
 
-      if (nextApproval !== 'approved') {
-        setProfileReady(false)
-        return
-      }
-
-      const [{ data, error }, { data: verificationData, error: verificationError }] = await Promise.all([
-        supabase.from('profiles').select('id').eq('id', user.id).maybeSingle(),
-        supabase.from('grade_verifications').select('id').eq('profile_id', user.id).limit(1),
-      ])
-
-      if (!active) return
-      const ready = !error && !verificationError && Boolean(data) && Boolean(verificationData?.length)
-      setProfileReady(ready)
-
-      if (!ready) {
-        timer = window.setTimeout(() => void checkAccess(), 1500)
+      if (nextApproval === 'pending' || !nextProfileReady) {
+        timer = window.setTimeout(() => void checkAccess(), 2000)
       }
     }
 
-    setApprovalStatus(user ? null : null)
+    setApprovalStatus(null)
     setProfileReady(user ? null : false)
     void checkAccess()
 
@@ -84,7 +75,7 @@ export function App() {
     }
   }, [user])
 
-  if (loading || (user && (approvalStatus === null || (approvalStatus === 'approved' && profileReady === null)))) {
+  if (loading || (user && (approvalStatus === null || profileReady === null))) {
     return <div className="grid min-h-screen place-items-center bg-[var(--nexus-paper)] text-sm font-semibold text-[var(--nexus-muted)]">Cargando Nexus...</div>
   }
 
@@ -94,8 +85,16 @@ export function App() {
     return <ResetPasswordPage />
   }
 
-  if (user && approvalStatus && approvalStatus !== 'approved') {
-    return <AccountApprovalPage status={approvalStatus} />
+  if (user && approvalStatus === 'rejected') {
+    return <AccountApprovalPage status="rejected" />
+  }
+
+  if (user && approvalStatus === 'pending' && !profileReady) {
+    return <ProfilePage applicationMode />
+  }
+
+  if (user && approvalStatus === 'pending' && profileReady) {
+    return <AccountApprovalPage status="pending" />
   }
 
   const needsProfile = Boolean(user && approvalStatus === 'approved' && !profileReady)
