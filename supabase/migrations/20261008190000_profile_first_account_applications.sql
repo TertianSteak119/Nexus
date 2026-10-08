@@ -136,7 +136,9 @@ with check (
   and public.can_prepare_account_application(auth.uid())
 );
 
-create or replace function public.admin_list_account_approvals()
+drop function if exists public.admin_list_account_approvals();
+
+create function public.admin_list_account_approvals()
 returns table (
   user_id uuid,
   email text,
