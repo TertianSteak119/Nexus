@@ -20,7 +20,7 @@ const lookingForOptions = [
   { value: 'other', label: 'Otro' },
 ] as const
 
-export function ProfilePage() {
+export function ProfilePage({ applicationMode = false }: { applicationMode?: boolean }) {
   const { user, signOut } = useAuth()
   const [username, setUsername] = useState('')
   const [fullName, setFullName] = useState('')
@@ -71,6 +71,8 @@ export function ProfilePage() {
         setAcceptsRequests(data.accepts_message_requests)
         setAvatarPath(data.avatar_path)
         setGpa(data.gpa?.toString() ?? '')
+      } else {
+        setFullName(String(user.user_metadata?.full_name ?? ''))
       }
       const [{ data: interestData }, { data: profileInterestData }, { data: lookingForData }, { data: gradeVerificationData }] = await Promise.all([
         supabase.from('interests').select('id, name').order('name'),
@@ -85,8 +87,10 @@ export function ProfilePage() {
         setOtherLookingFor(lookingForData.find((item) => item.kind === 'other')?.other_text ?? '')
       }
       setHasGradeVerification(Boolean(gradeVerificationData?.length))
-      const { data: blockedData } = await supabase.rpc('list_blocked_profiles')
-      if (blockedData) setBlockedProfiles(blockedData)
+      if (!applicationMode) {
+        const { data: blockedData } = await supabase.rpc('list_blocked_profiles')
+        if (blockedData) setBlockedProfiles(blockedData)
+      }
       setLoadingProfile(false)
     }
 
@@ -94,7 +98,7 @@ export function ProfilePage() {
     return () => {
       active = false
     }
-  }, [user])
+  }, [applicationMode, user])
 
   async function saveProfile(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -109,8 +113,20 @@ export function ProfilePage() {
       setError('El promedio escolar es obligatorio para completar tu perfil.')
       return
     }
+    if (!selectedInterests.length) {
+      setError('Selecciona al menos un interés.')
+      return
+    }
+    if (!lookingFor.length) {
+      setError('Selecciona al menos una opción en “¿Qué buscas?”.')
+      return
+    }
+    if (lookingFor.includes('other') && !otherLookingFor.trim()) {
+      setError('Escribe qué buscas en la opción “Otro”.')
+      return
+    }
     if (!hasGradeVerification && !gradeFile) {
-      setError('Debes subir una foto de tu boleta o comprobante de promedio para entrar a Nexus.')
+      setError('Debes subir una foto de tu boleta o comprobante de promedio.')
       return
     }
     const age = calculateAge(result.data.birthDate)
@@ -174,7 +190,19 @@ export function ProfilePage() {
       setGradeFile(null)
       setHasGradeVerification(true)
     }
-    setFeedback('Perfil guardado correctamente.')
+
+    if (applicationMode) {
+      const { error: notifyError } = await supabase.functions.invoke('notify-signup', {
+        body: { user_id: user.id },
+      })
+      if (notifyError) {
+        setError('Tu solicitud se guardó, pero no pudimos enviar el aviso al administrador. Intenta guardar nuevamente en unos minutos.')
+        return
+      }
+      setFeedback('Solicitud enviada. Queda pendiente de aprobación por el administrador de Nexus.')
+    } else {
+      setFeedback('Perfil guardado correctamente.')
+    }
   }
 
   async function unblockProfile(profileId: string) {
@@ -204,27 +232,31 @@ export function ProfilePage() {
   return (
     <section className="mx-auto max-w-3xl">
       <div className="flex items-end justify-between gap-4">
-        <div><h1 className="font-display text-4xl font-bold text-[var(--nexus-navy)]">Cuéntanos de ti.</h1></div>
+        <div>
+          <h1 className="font-display text-4xl font-bold text-[var(--nexus-navy)]">{applicationMode ? 'Completa tu solicitud de ingreso.' : 'Cuéntanos de ti.'}</h1>
+          {applicationMode && <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--nexus-muted)]">Estos datos se enviarán al administrador para revisar tu solicitud. Todo es obligatorio excepto el avatar y la bio.</p>}
+        </div>
         <button type="button" onClick={() => void signOut()} className="text-sm font-bold text-[var(--nexus-muted)] hover:text-[var(--nexus-navy)]">Cerrar sesión</button>
       </div>
       <form onSubmit={saveProfile} className="mt-8 grid gap-5 rounded-3xl border border-[var(--nexus-line)] bg-white p-6 shadow-xl shadow-slate-200/60 sm:grid-cols-2 sm:p-8">
-        <Field label="Nombre de usuario"><input value={username} onChange={(event) => setUsername(event.target.value)} className="input" placeholder="Tu nombre de usuario" /><span className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">Acepta mayúsculas, espacios, ñ, números, guiones y guion bajo.</span></Field>
-        <Field label="Nombre completo"><input value={fullName} onChange={(event) => setFullName(event.target.value)} className="input" placeholder="Tu nombre" /></Field>
-        <Field label="Fecha de nacimiento"><input value={birthDate} onChange={(event) => setBirthDate(event.target.value)} type="date" max={maximumBirthDate()} className="input" aria-describedby="birth-date-help" /><span id="birth-date-help" className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">Puedes editarla. Debes tener al menos 12 años.</span></Field>
-        <Field label="Nivel escolar"><select value={schoolLevel} onChange={(event) => setSchoolLevel(event.target.value as typeof schoolLevel)} className="input"><option value="secundaria">Secundaria</option><option value="preparatoria">Preparatoria</option><option value="universidad">Universidad</option></select></Field>
-        <Field label="Escuela"><input value={schoolName} onChange={(event) => setSchoolName(event.target.value)} className="input" placeholder="Nombre de tu escuela" /></Field>
-        <Field label="Bio"><textarea value={bio} onChange={(event) => setBio(event.target.value)} className="input min-h-28 resize-y" placeholder="Qué te interesa compartir..." /></Field>
-        <Field label="Avatar"><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setAvatarFile(event.target.files?.[0] ?? null)} className="input file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--nexus-mist)] file:px-3 file:py-2" />{avatarPath && <span className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">Avatar guardado</span>}</Field>
+        <Field label="Nombre de usuario · obligatorio"><input required value={username} onChange={(event) => setUsername(event.target.value)} className="input" placeholder="Tu nombre de usuario" /><span className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">Acepta mayúsculas, espacios, ñ, números, guiones y guion bajo.</span></Field>
+        <Field label="Nombre completo · obligatorio"><input required value={fullName} onChange={(event) => setFullName(event.target.value)} className="input" placeholder="Tu nombre" /></Field>
+        <Field label="Fecha de nacimiento · obligatorio"><input required value={birthDate} onChange={(event) => setBirthDate(event.target.value)} type="date" max={maximumBirthDate()} className="input" aria-describedby="birth-date-help" /><span id="birth-date-help" className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">Puedes editarla. Debes tener al menos 12 años.</span></Field>
+        <Field label="Nivel escolar · obligatorio"><select required value={schoolLevel} onChange={(event) => setSchoolLevel(event.target.value as typeof schoolLevel)} className="input"><option value="secundaria">Secundaria</option><option value="preparatoria">Preparatoria</option><option value="universidad">Universidad</option></select></Field>
+        <Field label="Escuela · obligatorio"><input required value={schoolName} onChange={(event) => setSchoolName(event.target.value)} className="input" placeholder="Nombre de tu escuela" /></Field>
+        <Field label="Bio · opcional"><textarea value={bio} onChange={(event) => setBio(event.target.value)} className="input min-h-28 resize-y" placeholder="Qué te interesa compartir..." /></Field>
+        <Field label="Avatar · opcional"><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setAvatarFile(event.target.files?.[0] ?? null)} className="input file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--nexus-mist)] file:px-3 file:py-2" />{avatarPath && <span className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">Avatar guardado</span>}</Field>
         <Field label="Promedio escolar · obligatorio"><input value={gpa} onChange={(event) => setGpa(event.target.value)} type="number" min="0" max="10" step="0.01" required className="input" placeholder="0 a 10" /></Field>
-        <fieldset className="sm:col-span-2"><legend className="text-sm font-semibold text-[var(--nexus-ink)]">¿Qué buscas?</legend><div className="mt-2 grid gap-2 sm:grid-cols-2">{lookingForOptions.map((option) => <label key={option.value} className="flex items-center gap-3 text-sm text-[var(--nexus-muted)]"><input type="checkbox" checked={lookingFor.includes(option.value)} onChange={(event) => setLookingFor((current) => event.target.checked ? [...current, option.value] : current.filter((value) => value !== option.value))} className="h-4 w-4 accent-[var(--nexus-coral)]" />{option.label}</label>)}</div>{lookingFor.includes('other') && <input value={otherLookingFor} onChange={(event) => setOtherLookingFor(event.target.value)} className="input" placeholder="Cuéntanos qué buscas" />}</fieldset>
-        <fieldset className="sm:col-span-2"><legend className="text-sm font-semibold text-[var(--nexus-ink)]">Intereses</legend><div className="mt-2 flex flex-wrap gap-2">{interests.length ? interests.map((interest) => <label key={interest.id} className={`cursor-pointer rounded-full border px-3 py-2 text-sm ${selectedInterests.includes(interest.id) ? 'border-[var(--nexus-coral)] bg-orange-50 text-[var(--nexus-coral)]' : 'border-[var(--nexus-line)] text-[var(--nexus-muted)]'}`}><input type="checkbox" className="sr-only" checked={selectedInterests.includes(interest.id)} onChange={(event) => setSelectedInterests((current) => event.target.checked ? [...current, interest.id] : current.filter((id) => id !== interest.id))} />{interest.name}</label>) : <p className="text-sm text-[var(--nexus-muted)]">Aún no hay intereses configurados.</p>}</div></fieldset>
+        <fieldset className="sm:col-span-2"><legend className="text-sm font-semibold text-[var(--nexus-ink)]">¿Qué buscas? · obligatorio</legend><div className="mt-2 grid gap-2 sm:grid-cols-2">{lookingForOptions.map((option) => <label key={option.value} className="flex items-center gap-3 text-sm text-[var(--nexus-muted)]"><input type="checkbox" checked={lookingFor.includes(option.value)} onChange={(event) => setLookingFor((current) => event.target.checked ? [...current, option.value] : current.filter((value) => value !== option.value))} className="h-4 w-4 accent-[var(--nexus-coral)]" />{option.label}</label>)}</div>{lookingFor.includes('other') && <input value={otherLookingFor} onChange={(event) => setOtherLookingFor(event.target.value)} className="input" placeholder="Cuéntanos qué buscas" />}</fieldset>
+        <fieldset className="sm:col-span-2"><legend className="text-sm font-semibold text-[var(--nexus-ink)]">Intereses · obligatorio</legend><div className="mt-2 flex flex-wrap gap-2">{interests.length ? interests.map((interest) => <label key={interest.id} className={`cursor-pointer rounded-full border px-3 py-2 text-sm ${selectedInterests.includes(interest.id) ? 'border-[var(--nexus-coral)] bg-orange-50 text-[var(--nexus-coral)]' : 'border-[var(--nexus-line)] text-[var(--nexus-muted)]'}`}><input type="checkbox" className="sr-only" checked={selectedInterests.includes(interest.id)} onChange={(event) => setSelectedInterests((current) => event.target.checked ? [...current, interest.id] : current.filter((id) => id !== interest.id))} />{interest.name}</label>) : <p className="text-sm text-[var(--nexus-muted)]">Aún no hay intereses configurados.</p>}</div></fieldset>
         <Field label="Foto de boleta/comprobante · obligatorio"><input type="file" accept="image/jpeg,image/png,image/webp" required={!hasGradeVerification} onChange={(event) => setGradeFile(event.target.files?.[0] ?? null)} className="input file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--nexus-mist)] file:px-3 file:py-2" /><span className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">{hasGradeVerification ? "Comprobante ya enviado. Puedes subir uno nuevo si deseas actualizarlo." : "Debes subirlo para completar el acceso. Tu comprobante se mantiene privado."}</span></Field>
         <label className="flex items-center gap-3 text-sm font-semibold text-[var(--nexus-ink)] sm:col-span-2"><input checked={acceptsRequests} onChange={(event) => setAcceptsRequests(event.target.checked)} type="checkbox" className="h-5 w-5 accent-[var(--nexus-coral)]" />Recibir solicitudes de mensaje</label>
         {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700 sm:col-span-2">{error}</p>}
         {feedback && <p role="status" className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700 sm:col-span-2">{feedback}</p>}
-        <button className="rounded-xl bg-[var(--nexus-coral)] px-4 py-3 font-bold text-white hover:bg-[#d95a42] sm:col-span-2">Guardar perfil</button>
+        <button className="rounded-xl bg-[var(--nexus-coral)] px-4 py-3 font-bold text-white hover:bg-[#d95a42] sm:col-span-2">{applicationMode ? 'Enviar solicitud de ingreso' : 'Guardar cambios'}</button>
       </form>
 
+      {!applicationMode && (
       <section className="mt-8 rounded-3xl border border-[var(--nexus-line)] bg-white p-6 sm:p-8">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--nexus-coral)]">Privacidad</p>
@@ -249,6 +281,7 @@ export function ProfilePage() {
           )) : <p className="rounded-2xl border border-dashed border-[var(--nexus-line)] p-5 text-sm text-[var(--nexus-muted)]">No tienes usuarios bloqueados.</p>}
         </div>
       </section>
+      )}
     </section>
   )
 }
