@@ -16,6 +16,7 @@ type PublicProfile = {
   gpa_verified: boolean
   accepts_message_requests: boolean
   show_groups_public: boolean
+  show_school_public: boolean
 }
 
 type Conversation = {
@@ -99,6 +100,7 @@ export function PublicProfilePage() {
           gpa_verified: false,
           accepts_message_requests: false,
           show_groups_public: false,
+          show_school_public: false,
         })
       }
       setLoading(false)
@@ -116,7 +118,7 @@ export function PublicProfilePage() {
     ] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_path, bio, school_level, school_name, gpa, gpa_verified, accepts_message_requests, show_groups_public')
+        .select('id, username, full_name, avatar_path, bio, school_level, school_name, gpa, gpa_verified, accepts_message_requests, show_groups_public, show_school_public')
         .eq('id', id)
         .maybeSingle(),
       supabase
@@ -273,7 +275,7 @@ export function PublicProfilePage() {
                 <h1 className="truncate font-display text-3xl font-bold text-[var(--nexus-navy)]">{profile.full_name}</h1>
                 <p className="mt-1 text-sm text-[var(--nexus-muted)]">@{profile.username}</p>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-[var(--nexus-muted)]">
-                  <span>🎓 {profile.school_name}</span>
+                  {profile.show_school_public && <span>🎓 {profile.school_name}</span>}
                   <span className="capitalize">📚 {profile.school_level}</span>
                   {profile.gpa !== null && <span>★ Promedio {profile.gpa}{profile.gpa_verified ? ' · verificado' : ''}</span>}
                 </div>
@@ -315,7 +317,7 @@ export function PublicProfilePage() {
                 <h2 className="font-display text-lg font-bold text-[var(--nexus-navy)]">Información</h2>
               </div>
               <div className="space-y-4 px-5 py-4 text-sm">
-                <InfoRow icon="🎓" label="Estudia en" value={profile.school_name} />
+                {profile.show_school_public && <InfoRow icon="🎓" label="Estudia en" value={profile.school_name} />}
                 <InfoRow icon="📚" label="Nivel" value={capitalize(profile.school_level)} />
                 {profile.gpa !== null && <InfoRow icon="★" label="Promedio" value={`${profile.gpa}${profile.gpa_verified ? ' · verificado' : ''}`} />}
                 <InfoRow icon="💬" label="Solicitudes de mensaje" value={profile.accepts_message_requests ? 'Disponibles' : 'No disponibles'} />
