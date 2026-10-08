@@ -82,20 +82,22 @@ Deno.serve(async (req) => {
     ))
   }
 
-  const nextStatus = approving ? "approved" : "rejected"
-  const { data: updated, error: updateError } = await admin
-    .from("account_approvals")
-    .update({
-      status: nextStatus,
-      reviewed_at: new Date().toISOString(),
-      review_note: approving ? "Aprobada desde el correo administrativo." : "Rechazada desde el correo administrativo.",
-    })
-    .eq("user_id", tokenRow.user_id)
-    .eq("status", "pending")
-    .select("user_id")
-    .maybeSingle()
+  const { error: reviewError } = await admin.rpc("complete_account_approval", {
+    target_user: tokenRow.user_id,
+    approve: approving,
+    reviewer: null,
+    note: approving ? "Aprobada desde el correo administrativo." : "Rechazada desde el correo administrativo.",
+  })
 
-  if (updateError) return html(page("No se pudo completar", "Ocurrió un error al procesar la solicitud."), 500)
+  if (reviewError) {
+    if (String(reviewError.message).includes("ACCOUNT_REQUEST_NOT_PENDING")) {
+      return html(page("Solicitud ya procesada", "La cuenta ya no se encuentra pendiente de aprobación."))
+    }
+    if (String(reviewError.message).includes("ACCOUNT_APPLICATION_INCOMPLETE")) {
+      return html(page("Solicitud incompleta", "El perfil todavía no contiene todos los datos obligatorios."), 409)
+    }
+    return html(page("No se pudo completar", "Ocurrió un error al procesar la solicitud."), 500)
+  }
 
   await admin
     .from("account_approval_email_tokens")
@@ -103,12 +105,8 @@ Deno.serve(async (req) => {
     .eq("user_id", tokenRow.user_id)
     .is("used_at", null)
 
-  if (!updated) {
-    return html(page("Solicitud ya procesada", "La cuenta ya no se encuentra pendiente de aprobación."))
-  }
-
   return html(page(
     approving ? "Cuenta aprobada" : "Solicitud rechazada",
-    approving ? `${name} ya puede continuar con el acceso a Nexus después de confirmar su correo.` : `La solicitud de ${name} fue rechazada.`,
+    approving ? `${name} ya fue aprobado y su comprobante inicial quedó verificado.` : `La solicitud de ${name} fue rechazada.`,
   ))
 })
