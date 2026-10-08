@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../features/auth/useAuth'
 
 const navigation = [
   { to: '/', label: 'Inicio', icon: '⌂', end: true },
@@ -9,6 +12,53 @@ const navigation = [
 ]
 
 export function AppShell() {
+  const { user } = useAuth()
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [pendingRequests, setPendingRequests] = useState(0)
+
+  useEffect(() => {
+    let active = true
+
+    async function loadAdminState() {
+      if (!user) {
+        if (active) {
+          setIsAdmin(false)
+          setPendingRequests(0)
+        }
+        return
+      }
+
+      const { data: moderator, error: moderatorError } = await supabase.rpc('is_moderator')
+      if (!active) return
+
+      if (moderatorError || !moderator) {
+        setIsAdmin(false)
+        setPendingRequests(0)
+        return
+      }
+
+      setIsAdmin(true)
+
+      const { data: count } = await supabase.rpc('moderator_pending_account_approvals_count')
+      if (active) setPendingRequests(Number(count ?? 0))
+    }
+
+    void loadAdminState()
+
+    const timer = window.setInterval(() => {
+      void loadAdminState()
+    }, 15000)
+
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
+  }, [user])
+
+  const items = isAdmin
+    ? [...navigation, { to: '/requests', label: 'Solicitudes', icon: '☷', end: false }]
+    : navigation
+
   return (
     <div className="min-h-screen bg-[var(--nexus-paper)] text-[var(--nexus-ink)]">
       <aside className="fixed inset-y-0 left-0 z-40 flex w-[84px] flex-col border-r border-[var(--nexus-line)] bg-white/95 shadow-sm backdrop-blur sm:w-64">
@@ -26,13 +76,13 @@ export function AppShell() {
         </div>
 
         <nav className="flex flex-1 flex-col gap-2 overflow-y-auto px-2 py-4 sm:px-3">
-          {navigation.map((item) => (
+          {items.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `group flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl px-2 py-3 text-xs font-bold transition sm:min-h-0 sm:flex-row sm:justify-start sm:gap-3 sm:px-4 sm:py-3 sm:text-sm ${
+                `group relative flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl px-2 py-3 text-xs font-bold transition sm:min-h-0 sm:flex-row sm:justify-start sm:gap-3 sm:px-4 sm:py-3 sm:text-sm ${
                   isActive
                     ? 'bg-[var(--nexus-navy)] text-white shadow-sm'
                     : 'text-[var(--nexus-muted)] hover:bg-[var(--nexus-mist)] hover:text-[var(--nexus-navy)]'
@@ -41,15 +91,26 @@ export function AppShell() {
             >
               <span aria-hidden="true" className="text-xl leading-none sm:w-6 sm:text-center">{item.icon}</span>
               <span className="max-w-full truncate">{item.label}</span>
+              {item.to === '/requests' && pendingRequests > 0 && (
+                <span className="absolute right-1 top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[var(--nexus-coral)] px-1 text-[10px] font-bold leading-none text-white sm:static sm:ml-auto">
+                  {pendingRequests > 99 ? '99+' : pendingRequests}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>
 
         <div className="border-t border-[var(--nexus-line)] px-2 py-4 sm:px-5">
-          <p className="hidden text-xs leading-5 text-[var(--nexus-muted)] sm:block">
-            Navegación fija de Nexus
-          </p>
-          <div className="mx-auto h-2 w-2 rounded-full bg-[var(--nexus-coral)] sm:hidden" aria-hidden="true" />
+          {isAdmin && (
+            <p className="hidden text-xs font-bold uppercase tracking-[0.14em] text-[var(--nexus-coral)] sm:block">
+              Administrador
+            </p>
+          )}
+          {!isAdmin && (
+            <p className="hidden text-xs leading-5 text-[var(--nexus-muted)] sm:block">
+              Navegación fija de Nexus
+            </p>
+          )}
         </div>
       </aside>
 
