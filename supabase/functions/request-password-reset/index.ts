@@ -62,7 +62,7 @@ Deno.serve(async (req: Request) => {
     const base = appUrl.endsWith("/") ? appUrl : `${appUrl}/`;
     const resetUrl = `${base}?mode=recovery&token_hash=${encodeURIComponent(generated.properties.hashed_token)}`;
 
-    await fetch("https://api.resend.com/emails", {
+    const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${resendKey}`,
@@ -100,7 +100,14 @@ Deno.serve(async (req: Request) => {
       }),
     });
 
-    return json({ ok: true });
+    if (!resendResponse.ok) {
+      return new Response(JSON.stringify({ error: "EMAIL_DELIVERY_UNAVAILABLE" }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return json({ ok: true, delivery: "email" });
   } catch {
     return json({ ok: true });
   }
