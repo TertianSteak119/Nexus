@@ -28,24 +28,14 @@ export function AppShell() {
         return
       }
 
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role, status')
-        .eq('id', user.id)
-        .maybeSingle()
-
+      const { data: adminRows, error: adminError } = await supabase.rpc('current_admin_state')
       if (!active) return
 
-      const admin = !profileError && profile?.role === 'moderator' && profile?.status === 'active'
+      const adminState = Array.isArray(adminRows) ? adminRows[0] : adminRows
+      const admin = !adminError && Boolean(adminState?.is_admin)
+
       setIsAdmin(admin)
-
-      if (!admin) {
-        setPendingRequests(0)
-        return
-      }
-
-      const { data: count } = await supabase.rpc('moderator_pending_account_approvals_count')
-      if (active) setPendingRequests(Number(count ?? 0))
+      setPendingRequests(admin ? Number(adminState?.pending_requests ?? 0) : 0)
     }
 
     void loadAdminState()
