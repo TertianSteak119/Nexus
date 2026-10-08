@@ -98,7 +98,7 @@ export function PublicProfilePage() {
       supabase.from('profiles').select('id, username, full_name, avatar_path, bio, school_level, school_name, gpa, gpa_verified, accepts_message_requests').eq('id', id).maybeSingle(),
       supabase.from('chat_requests').select('from_id, to_id, status').eq('status', 'pending').or(`and(from_id.eq.${user.id},to_id.eq.${id}),and(from_id.eq.${id},to_id.eq.${user.id})`),
       supabase.rpc('list_direct_conversations'),
-      supabase.from('profile_interests').select('interests(name)').eq('profile_id', id),
+      supabase.from('profile_interests').select('interest_id').eq('profile_id', id),
       supabase.from('profile_looking_for').select('kind, other_text').eq('profile_id', id),
       supabase.from('posts').select('id, body, created_at').eq('author_id', id).order('created_at', { ascending: false }).limit(12),
     ])
@@ -106,14 +106,17 @@ export function PublicProfilePage() {
     if (profileError) setError(profileError.message)
     setProfile((profileData as PublicProfile | null) ?? null)
 
-    setInterests(
-      (interestRows ?? [])
-        .map((row) => {
-          const relation = row.interests
-          return Array.isArray(relation) ? relation[0]?.name : relation?.name
-        })
-        .filter((name): name is string => typeof name === 'string' && name.length > 0),
-    )
+    const interestIds = (interestRows ?? []).map((row) => row.interest_id)
+    if (interestIds.length) {
+      const { data: interestData } = await supabase
+        .from('interests')
+        .select('name')
+        .in('id', interestIds)
+        .order('name')
+      setInterests((interestData ?? []).map((item) => item.name))
+    } else {
+      setInterests([])
+    }
 
     setLookingFor(
       ((lookingRows ?? []) as LookingForRow[]).map((row) =>
