@@ -72,13 +72,7 @@ export function AuthPage() {
       return
     }
     if (mode === 'signup') {
-      if (response.data.user?.id) {
-        const { error: notifyError } = await supabase.functions.invoke('notify-signup', {
-          body: { user_id: response.data.user.id },
-        })
-        if (notifyError) console.error('No se pudo enviar el aviso de registro:', notifyError.message)
-      }
-      setMessage('Solicitud enviada. Confirmar tu correo no aprueba la cuenta; solo el administrador de Nexus puede autorizar el acceso.')
+      setMessage('Cuenta creada. Confirma tu correo para continuar y completar la solicitud de ingreso a Nexus.')
     }
   }
 
