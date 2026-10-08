@@ -15,6 +15,7 @@ import { DiscoverPage } from './features/discover/DiscoverPage'
 import { MessagesPage } from './features/messages/MessagesPage'
 import { PublicProfilePage } from './features/profile/PublicProfilePage'
 import { AdminConsolePage } from './features/admin/AdminConsolePage'
+import { RequestsPage } from './features/admin/RequestsPage'
 import { GroupsPage } from './features/groups/GroupsPage'
 import { GroupDetailPage } from './features/groups/GroupDetailPage'
 import { supabase } from './lib/supabase'
@@ -110,6 +111,7 @@ export function App() {
           <Route path="groups/:id" element={!user ? <AuthPage /> : needsProfile ? <ProfilePage /> : <GroupDetailPage />} />
           <Route path="profile" element={user ? <ProfilePage /> : <AuthPage />} />
           <Route path="profile/:id" element={!user ? <AuthPage /> : needsProfile ? <ProfilePage /> : <PublicProfilePage />} />
+          <Route path="requests" element={!user ? <AuthPage /> : needsProfile ? <ProfilePage /> : <RequestsPage />} />
           <Route path="control" element={!user ? <AuthPage /> : <AdminConsolePage />} />
           <Route path="*" element={<PlaceholderPage title="Página no encontrada" description="Esta ruta no existe en Nexus." />} />
         </Route>
