@@ -14,7 +14,7 @@ export function AppShell() {
       <header className="border-b border-[var(--nexus-line)] bg-white/85 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
           <NavLink to="/" className="font-display text-2xl font-bold tracking-tight text-[var(--nexus-navy)]">
-            nexus<span className="text-[var(--nexus-coral)]">.</span>
+            nexus
           </NavLink>
           <span className="hidden text-xs font-semibold uppercase tracking-[0.18em] text-[var(--nexus-muted)] sm:block">
             tu espacio, tu ritmo
