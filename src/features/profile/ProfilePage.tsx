@@ -52,6 +52,7 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
   const [bio, setBio] = useState('')
   const [acceptsRequests, setAcceptsRequests] = useState(true)
   const [showGroupsPublic, setShowGroupsPublic] = useState(false)
+  const [showSchoolPublic, setShowSchoolPublic] = useState(true)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPath, setAvatarPath] = useState<string | null>(null)
   const [interests, setInterests] = useState<{ id: string; name: string }[]>([])
@@ -84,7 +85,7 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
 
       const { data, error: loadError } = await supabase
         .from('profiles')
-        .select('username, full_name, birth_date, school_level, school_name, bio, accepts_message_requests, show_groups_public, avatar_path, gpa')
+        .select('username, full_name, birth_date, school_level, school_name, bio, accepts_message_requests, show_groups_public, show_school_public, avatar_path, gpa')
         .eq('id', user.id)
         .maybeSingle()
 
@@ -101,6 +102,7 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
         setBio(data.bio ?? '')
         setAcceptsRequests(data.accepts_message_requests)
         setShowGroupsPublic(Boolean(data.show_groups_public))
+        setShowSchoolPublic(Boolean(data.show_school_public))
         setAvatarPath(data.avatar_path)
         setGpa(data.gpa?.toString() ?? '')
       } else {
@@ -209,6 +211,7 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
       bio: result.data.bio || null,
       accepts_message_requests: acceptsRequests,
       show_groups_public: showGroupsPublic,
+      show_school_public: showSchoolPublic,
       gpa: result.data.gpa,
     })
 
@@ -324,6 +327,7 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
       .update({
         accepts_message_requests: acceptsRequests,
         show_groups_public: showGroupsPublic,
+        show_school_public: showSchoolPublic,
       })
       .eq('id', user.id)
 
@@ -452,6 +456,12 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
                 onChange={setAcceptsRequests}
                 title="Aceptar solicitudes de mensaje"
                 description="Si lo desactivas, otros usuarios no podrán enviarte nuevas solicitudes de chat."
+              />
+              <PrivacyToggle
+                checked={showSchoolPublic}
+                onChange={setShowSchoolPublic}
+                title="Mostrar mi escuela en mi perfil"
+                description="Si lo desactivas, otros usuarios no verán el nombre de tu escuela en tu perfil público."
               />
               <PrivacyToggle
                 checked={showGroupsPublic}
