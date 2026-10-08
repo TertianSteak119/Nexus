@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { z } from 'zod'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
@@ -42,6 +42,11 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
   const [error, setError] = useState('')
   const [loadingProfile, setLoadingProfile] = useState(true)
   const [blockedProfiles, setBlockedProfiles] = useState<{ id: string; username: string; full_name: string; avatar_path: string | null }[]>([])
+
+  const avatarUrl = useMemo(() => {
+    if (!avatarPath) return null
+    return supabase.storage.from('avatars').getPublicUrl(avatarPath).data.publicUrl
+  }, [avatarPath])
 
   useEffect(() => {
     let active = true
@@ -230,15 +235,54 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
   }
 
   return (
-    <section className="mx-auto max-w-3xl">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-4xl font-bold text-[var(--nexus-navy)]">{applicationMode ? 'Completa tu solicitud de ingreso.' : 'Cuéntanos de ti.'}</h1>
-          {applicationMode && <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--nexus-muted)]">Estos datos se enviarán al administrador para revisar tu solicitud. Todo es obligatorio excepto el avatar y la bio.</p>}
+    <section className={applicationMode ? 'mx-auto max-w-3xl' : 'mx-auto max-w-5xl'}>
+      {applicationMode ? (
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h1 className="font-display text-4xl font-bold text-[var(--nexus-navy)]">Completa tu solicitud de ingreso.</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--nexus-muted)]">Estos datos se enviarán al administrador para revisar tu solicitud. Todo es obligatorio excepto el avatar y la bio.</p>
+          </div>
+          <button type="button" onClick={() => void signOut()} className="text-sm font-bold text-[var(--nexus-muted)] hover:text-[var(--nexus-navy)]">Cerrar sesión</button>
         </div>
-        <button type="button" onClick={() => void signOut()} className="text-sm font-bold text-[var(--nexus-muted)] hover:text-[var(--nexus-navy)]">Cerrar sesión</button>
-      </div>
-      <form onSubmit={saveProfile} className="mt-8 grid gap-5 rounded-3xl border border-[var(--nexus-line)] bg-white p-6 shadow-xl shadow-slate-200/60 sm:grid-cols-2 sm:p-8">
+      ) : (
+        <article className="overflow-hidden rounded-2xl border border-[var(--nexus-line)] bg-white shadow-sm">
+          <div className="relative h-44 bg-[linear-gradient(125deg,#173a57_0%,#264f6c_42%,#7da1b5_100%)] sm:h-52">
+            <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_18%_30%,white_0,transparent_26%),radial-gradient(circle_at_82%_15%,white_0,transparent_18%)]" />
+          </div>
+          <div className="relative px-5 sm:px-7">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex min-w-0 items-end gap-4">
+                <div className="-mt-14 shrink-0">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="" className="h-28 w-28 rounded-xl border-4 border-white object-cover shadow-md sm:h-32 sm:w-32" />
+                  ) : (
+                    <div className="grid h-28 w-28 place-items-center rounded-xl border-4 border-white bg-[var(--nexus-mist)] font-display text-4xl font-bold text-[var(--nexus-navy)] shadow-md sm:h-32 sm:w-32">
+                      {(fullName || username || 'N').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 pb-3">
+                  <h1 className="truncate font-display text-3xl font-bold text-[var(--nexus-navy)]">{fullName || 'Tu perfil'}</h1>
+                  <p className="mt-1 text-sm text-[var(--nexus-muted)]">{username ? `@${username}` : 'Completa tu nombre de usuario'}</p>
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-[var(--nexus-muted)]">
+                    {schoolName && <span>🎓 {schoolName}</span>}
+                    <span className="capitalize">📚 {schoolLevel}</span>
+                    {gpa && <span>★ Promedio {gpa}</span>}
+                  </div>
+                </div>
+              </div>
+              <button type="button" onClick={() => void signOut()} className="mb-4 rounded-lg border border-[var(--nexus-line)] bg-white px-4 py-2 text-sm font-bold text-[var(--nexus-muted)] hover:bg-slate-50">Cerrar sesión</button>
+            </div>
+            <nav className="mt-1 flex gap-1 overflow-x-auto border-t border-[var(--nexus-line)]">
+              <a href="#editar-perfil" className="border-b-3 border-[#315f8c] px-4 py-3 text-sm font-bold text-[#315f8c]">Perfil</a>
+              <a href="#editar-perfil" className="px-4 py-3 text-sm font-bold text-[var(--nexus-muted)] hover:bg-slate-50">Editar información</a>
+              <a href="#privacidad" className="px-4 py-3 text-sm font-bold text-[var(--nexus-muted)] hover:bg-slate-50">Privacidad</a>
+            </nav>
+          </div>
+        </article>
+      )}
+
+      <form id="editar-perfil" onSubmit={saveProfile} className="mt-6 grid gap-5 rounded-2xl border border-[var(--nexus-line)] bg-white p-6 shadow-sm sm:grid-cols-2 sm:p-8">
         <Field label="Nombre de usuario · obligatorio"><input required value={username} onChange={(event) => setUsername(event.target.value)} className="input" placeholder="Tu nombre de usuario" /><span className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">Acepta mayúsculas, espacios, ñ, números, guiones y guion bajo.</span></Field>
         <Field label="Nombre completo · obligatorio"><input required value={fullName} onChange={(event) => setFullName(event.target.value)} className="input" placeholder="Tu nombre" /></Field>
         <Field label="Fecha de nacimiento · obligatorio"><input required value={birthDate} onChange={(event) => setBirthDate(event.target.value)} type="date" max={maximumBirthDate()} className="input" aria-describedby="birth-date-help" /><span id="birth-date-help" className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">Puedes editarla. Debes tener al menos 12 años.</span></Field>
@@ -257,7 +301,7 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
       </form>
 
       {!applicationMode && (
-      <section className="mt-8 rounded-3xl border border-[var(--nexus-line)] bg-white p-6 sm:p-8">
+      <section id="privacidad" className="mt-6 rounded-2xl border border-[var(--nexus-line)] bg-white p-6 shadow-sm sm:p-8">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--nexus-coral)]">Privacidad</p>
           <h2 className="mt-2 font-display text-2xl font-bold text-[var(--nexus-navy)]">Usuarios bloqueados</h2>
