@@ -108,8 +108,11 @@ export function PublicProfilePage() {
 
     setInterests(
       (interestRows ?? [])
-        .map((row: { interests?: { name?: string } | null }) => row.interests?.name)
-        .filter((name): name is string => Boolean(name)),
+        .map((row) => {
+          const relation = row.interests
+          return Array.isArray(relation) ? relation[0]?.name : relation?.name
+        })
+        .filter((name): name is string => typeof name === 'string' && name.length > 0),
     )
 
     setLookingFor(
