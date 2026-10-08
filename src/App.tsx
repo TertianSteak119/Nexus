@@ -7,6 +7,7 @@ import { PlaceholderPage } from './pages/PlaceholderPage'
 import { AuthPage } from './features/auth/AuthPage'
 import { AccountApprovalPage } from './features/auth/AccountApprovalPage'
 import { ResetPasswordPage } from './features/auth/ResetPasswordPage'
+import { SignupApplicationPage } from './features/auth/SignupApplicationPage'
 import { AuthProvider } from './features/auth/AuthContext'
 import { useAuth } from './features/auth/useAuth'
 import { ProfilePage } from './features/profile/ProfilePage'
@@ -76,10 +77,16 @@ export function App() {
     }
   }, [user])
 
-  const recoveryMode = new URLSearchParams(window.location.search).get('mode') === 'recovery'
+  const pageMode = new URLSearchParams(window.location.search).get('mode')
+  const recoveryMode = pageMode === 'recovery'
+  const signupApplicationMode = pageMode === 'application'
 
   if (recoveryMode) {
     return <ResetPasswordPage />
+  }
+
+  if (signupApplicationMode) {
+    return <SignupApplicationPage />
   }
 
   if (loading || (user && (approvalStatus === null || profileReady === null))) {
