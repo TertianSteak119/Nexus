@@ -21,6 +21,21 @@ type AccountApproval = {
   requested_at: string
   reviewed_at: string | null
   review_note: string | null
+  application_complete: boolean
+  username: string | null
+  birth_date: string | null
+  age: number | null
+  school_level: 'secundaria' | 'preparatoria' | 'universidad' | null
+  school_name: string | null
+  gpa: number | null
+  bio: string | null
+  avatar_path: string | null
+  accepts_message_requests: boolean | null
+  interests: string[]
+  looking_for: string[]
+  grade_verification_id: string | null
+  grade_verification_status: string | null
+  grade_evidence_path: string | null
 }
 
 type Report = {
@@ -248,12 +263,48 @@ export function AdminConsolePage() {
 
       <AdminTable title="Solicitudes de acceso" empty="No hay solicitudes pendientes.">
         {accountApprovals.filter((item) => item.status === 'pending').map((item) => (
-          <Row key={item.user_id} title={item.full_name} subtitle={`${item.email} · ${new Date(item.requested_at).toLocaleString('es-MX')}`}>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={() => void reviewAccount(item, true)} className="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-white">Aprobar acceso</button>
+          <div key={item.user_id} className="rounded-2xl bg-[var(--nexus-paper)] p-5">
+            <div className="flex flex-wrap items-start gap-4">
+              {item.avatar_path && (
+                <img
+                  src={supabase.storage.from('avatars').getPublicUrl(item.avatar_path).data.publicUrl}
+                  alt=""
+                  className="h-16 w-16 rounded-full object-cover"
+                />
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-bold text-[var(--nexus-navy)]">{item.full_name}</h3>
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${item.application_complete ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {item.application_complete ? 'Solicitud completa' : 'Perfil incompleto'}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-[var(--nexus-muted)]">{item.email} · {new Date(item.requested_at).toLocaleString('es-MX')}</p>
+              </div>
+            </div>
+
+            <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
+              <div><dt className="font-bold text-[var(--nexus-navy)]">Usuario</dt><dd className="text-[var(--nexus-muted)]">{item.username ? `@${item.username}` : 'Pendiente'}</dd></div>
+              <div><dt className="font-bold text-[var(--nexus-navy)]">Edad</dt><dd className="text-[var(--nexus-muted)]">{item.age ?? 'Pendiente'}{item.birth_date ? ` · ${item.birth_date}` : ''}</dd></div>
+              <div><dt className="font-bold text-[var(--nexus-navy)]">Nivel escolar</dt><dd className="capitalize text-[var(--nexus-muted)]">{item.school_level ?? 'Pendiente'}</dd></div>
+              <div><dt className="font-bold text-[var(--nexus-navy)]">Escuela</dt><dd className="text-[var(--nexus-muted)]">{item.school_name ?? 'Pendiente'}</dd></div>
+              <div><dt className="font-bold text-[var(--nexus-navy)]">Promedio</dt><dd className="text-[var(--nexus-muted)]">{item.gpa ?? 'Pendiente'}</dd></div>
+              <div><dt className="font-bold text-[var(--nexus-navy)]">Solicitudes de mensaje</dt><dd className="text-[var(--nexus-muted)]">{item.accepts_message_requests == null ? 'Pendiente' : item.accepts_message_requests ? 'Sí' : 'No'}</dd></div>
+              <div className="sm:col-span-2"><dt className="font-bold text-[var(--nexus-navy)]">Intereses</dt><dd className="text-[var(--nexus-muted)]">{item.interests?.length ? item.interests.join(', ') : 'Pendiente'}</dd></div>
+              <div className="sm:col-span-2"><dt className="font-bold text-[var(--nexus-navy)]">Busca</dt><dd className="text-[var(--nexus-muted)]">{item.looking_for?.length ? item.looking_for.join(', ') : 'Pendiente'}</dd></div>
+              {item.bio && <div className="sm:col-span-2"><dt className="font-bold text-[var(--nexus-navy)]">Bio</dt><dd className="whitespace-pre-wrap text-[var(--nexus-muted)]">{item.bio}</dd></div>}
+            </dl>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              {item.grade_evidence_path && (
+                <button onClick={() => void openEvidence(item.grade_evidence_path!, 'boletas')} className="rounded-xl border border-[var(--nexus-line)] bg-white px-3 py-2 text-xs font-bold text-[var(--nexus-navy)]">
+                  Ver comprobante
+                </button>
+              )}
+              <button disabled={!item.application_complete} onClick={() => void reviewAccount(item, true)} className="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">Aprobar acceso</button>
               <button onClick={() => void reviewAccount(item, false)} className="rounded-xl bg-red-700 px-3 py-2 text-xs font-bold text-white">Rechazar</button>
             </div>
-          </Row>
+          </div>
         ))}
       </AdminTable>
 
