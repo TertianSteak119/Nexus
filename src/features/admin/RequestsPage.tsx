@@ -57,6 +57,29 @@ export function RequestsPage() {
     void load()
   }, [load])
 
+  async function copyApplicationLink(item: AccountRequest) {
+    setError('')
+    setFeedback('')
+
+    const { data: token, error: tokenError } = await supabase.rpc('admin_issue_pending_application_link', {
+      target_user: item.user_id,
+    })
+
+    if (tokenError || !token) {
+      setError(tokenError?.message ?? 'No fue posible crear el enlace.')
+      return
+    }
+
+    const applicationUrl = new URL(import.meta.env.BASE_URL, window.location.origin)
+    applicationUrl.searchParams.set('mode', 'application')
+    applicationUrl.searchParams.set('uid', item.user_id)
+    applicationUrl.searchParams.set('token', String(token))
+    applicationUrl.searchParams.set('name', item.full_name)
+
+    await navigator.clipboard.writeText(applicationUrl.toString())
+    setFeedback('Enlace para completar la solicitud copiado. Puedes enviárselo al usuario.')
+  }
+
   async function review(item: AccountRequest, approve: boolean) {
     setError('')
     setFeedback('')
@@ -191,6 +214,15 @@ export function RequestsPage() {
               </dl>
 
               <div className="mt-5 flex flex-wrap gap-2">
+                {!item.application_complete && (
+                  <button
+                    type="button"
+                    onClick={() => void copyApplicationLink(item)}
+                    className="rounded-lg border border-[var(--nexus-line)] bg-white px-4 py-2.5 text-sm font-bold text-[#315f8c]"
+                  >
+                    Copiar enlace para completar solicitud
+                  </button>
+                )}
                 {item.grade_evidence_path && (
                   <button
                     type="button"
