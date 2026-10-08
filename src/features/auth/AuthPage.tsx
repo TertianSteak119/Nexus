@@ -40,8 +40,8 @@ export function AuthPage() {
         body: { email: emailResult.data },
       })
       setSubmitting(false)
-      if (resetError) setError('No pudimos enviar el correo de recuperación. Intenta nuevamente en unos minutos.')
-      else setMessage('Si existe una cuenta con ese correo, te enviamos un enlace para restablecer tu contraseña.')
+      if (resetError) setError('No pudimos enviar el correo de recuperación. El servicio de correo no aceptó el envío.')
+      else setMessage(`Si existe una cuenta con ${emailResult.data}, recibirás un correo electrónico de recuperación. Revisa tu bandeja de entrada y Spam.`)
       return
     }
     if (mode === 'signup' && fullName.trim().length < 2) {
