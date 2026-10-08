@@ -26,9 +26,13 @@ Deno.serve(async (req: Request) => {
 
     const authHeader = req.headers.get("authorization") ?? "";
     const accessToken = authHeader.replace(/^Bearer\s+/i, "");
-    const { data: callerData, error: callerError } = await admin.auth.getUser(accessToken);
-    if (callerError || !callerData.user || callerData.user.id !== user_id) {
-      return json({ error: "Unauthorized" }, 401);
+    const internalCall = accessToken === serviceRole;
+
+    if (!internalCall) {
+      const { data: callerData, error: callerError } = await admin.auth.getUser(accessToken);
+      if (callerError || !callerData.user || callerData.user.id !== user_id) {
+        return json({ error: "Unauthorized" }, 401);
+      }
     }
 
     const [{ data: userResult, error: userError }, { data: approval, error: approvalError }] = await Promise.all([
