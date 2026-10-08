@@ -58,23 +58,56 @@ export function AuthPage() {
       return
     }
     setSubmitting(true)
+
+    let applicationToken = ''
+    let applicationTokenHash = ''
+
+    if (mode === 'signup') {
+      applicationToken = randomToken()
+      applicationTokenHash = await sha256(applicationToken)
+    }
+
     const response = mode === 'login'
       ? await supabase.auth.signInWithPassword(result.data)
       : await supabase.auth.signUp({
           email: result.data.email,
           password: result.data.password,
           options: {
-            data: { full_name: fullName.trim() },
+            data: {
+              full_name: fullName.trim(),
+              application_token_hash: applicationTokenHash,
+              application_token_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            },
             emailRedirectTo: publicAppUrl(),
           },
         })
+
     setSubmitting(false)
+
     if (response.error) {
-      setError(response.error.message)
+      if (response.error.code === 'email_not_confirmed') {
+        setError('Tu correo todavía no está confirmado. Si aún no completaste tu solicitud, pide al administrador de Nexus un enlace temporal para llenarla.')
+      } else {
+        setError(response.error.message)
+      }
       return
     }
+
     if (mode === 'signup') {
-      setMessage('Cuenta creada. Confirma tu correo para continuar y completar la solicitud de ingreso a Nexus.')
+      const createdUser = response.data.user
+      const isRealNewUser = Boolean(createdUser?.id && createdUser.identities?.length)
+
+      if (!createdUser?.id || !isRealNewUser) {
+        setMessage('Si este correo ya estaba registrado, no se creó una cuenta nueva. Inicia sesión o pide al administrador un enlace para completar una solicitud pendiente.')
+        return
+      }
+
+      const applicationUrl = new URL(publicAppUrl())
+      applicationUrl.searchParams.set('mode', 'application')
+      applicationUrl.searchParams.set('uid', createdUser.id)
+      applicationUrl.searchParams.set('token', applicationToken)
+      applicationUrl.searchParams.set('name', fullName.trim())
+      window.location.assign(applicationUrl.toString())
     }
   }
 
@@ -118,4 +151,21 @@ export function AuthPage() {
 
 function publicAppUrl() {
   return new URL(import.meta.env.BASE_URL, window.location.origin).toString()
+}
+
+
+function randomToken() {
+  const bytes = crypto.getRandomValues(new Uint8Array(32))
+  return btoa(String.fromCharCode(...bytes))
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replaceAll('=', '')
+}
+
+async function sha256(value: string) {
+  const bytes = new TextEncoder().encode(value)
+  const digest = await crypto.subtle.digest('SHA-256', bytes)
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
 }
