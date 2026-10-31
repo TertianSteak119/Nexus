@@ -59,6 +59,23 @@ export function AuthPage() {
     }
     setSubmitting(true)
 
+    if (mode === 'signup') {
+      const { data: emailCheck, error: emailCheckError } = await supabase.functions.invoke('validate-signup-email', {
+        body: { email: result.data.email },
+      })
+
+      if (emailCheckError || !emailCheck?.valid) {
+        setSubmitting(false)
+        const reason = String(emailCheck?.reason ?? '')
+        if (reason === 'DOMAIN_NOT_FOUND') {
+          setError('El dominio de ese correo no existe o no puede recibir correo. Revisa la dirección.')
+        } else {
+          setError('No pudimos comprobar ese correo en este momento. Revisa la dirección e intenta nuevamente.')
+        }
+        return
+      }
+    }
+
     let applicationToken = ''
     let applicationTokenHash = ''
 
