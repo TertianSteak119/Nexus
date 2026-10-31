@@ -103,7 +103,11 @@ export function AuthPage() {
 
     if (response.error) {
       if (response.error.code === 'email_not_confirmed') {
-        setError('Tu correo todavía no está confirmado. Si aún no completaste tu solicitud, pide al administrador de Nexus un enlace temporal para llenarla.')
+        setError('Tu correo todavía no está confirmado. Si tu solicitud ya fue aprobada por un administrador, vuelve a intentar iniciar sesión. Si aún no completaste tu solicitud, pide al administrador un enlace temporal.')
+      } else if (response.error.code === 'over_email_send_rate_limit' || response.error.message.toLowerCase().includes('email rate limit exceeded')) {
+        setError('Nexus alcanzó temporalmente el límite de correos para crear cuentas. Si ya tienes una cuenta, cambia a “Iniciar sesión” y usa tu correo y contraseña. No necesitas crearla nuevamente.')
+      } else if (response.error.code === 'invalid_credentials') {
+        setError('El correo o la contraseña no coinciden. Si ya tienes cuenta, revisa tus datos e intenta nuevamente; no es necesario crear otra cuenta.')
       } else {
         setError(response.error.message)
       }
