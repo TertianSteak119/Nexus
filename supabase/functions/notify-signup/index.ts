@@ -8,6 +8,10 @@ const corsHeaders = {
 
 const encoder = new TextEncoder();
 
+type InterestRelation = { name?: string | null } | Array<{ name?: string | null }> | null;
+type ProfileInterestRow = { interests: InterestRelation };
+type LookingForRow = { kind: string; other_text: string | null };
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -57,15 +61,19 @@ Deno.serve(async (req: Request) => {
     ]);
 
     const latestGrade = gradeRows?.[0] ?? null;
-    const interestNames = (interestRows ?? [])
-      .map((row: any) => row.interests?.name)
-      .filter((name: unknown): name is string => typeof name === "string" && name.length > 0);
-    const lookingFor = (lookingRows ?? []).map((row: any) => {
+    const interestNames = ((interestRows ?? []) as ProfileInterestRow[])
+      .map((row) => {
+        const relation = row.interests;
+        return Array.isArray(relation) ? relation[0]?.name : relation?.name;
+      })
+      .filter((name): name is string => typeof name === "string" && name.length > 0);
+
+    const lookingFor = ((lookingRows ?? []) as LookingForRow[]).map((row) => {
       if (row.kind === "friends") return "Amigos";
       if (row.kind === "projects") return "Proyectos";
       if (row.kind === "study_groups") return "Grupos de estudio";
-      if (row.kind === "other") return `Otro: ${String(row.other_text ?? "")}`;
-      return String(row.kind);
+      if (row.kind === "other") return `Otro: ${row.other_text ?? ""}`;
+      return row.kind;
     });
 
     if (
