@@ -1,10 +1,15 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-const fallbackUrl = 'https://bhxpsfwfvhjlovijlvcs.supabase.co'
-const fallbackPublishableKey = 'sb_publishable_lmuGS__TQFJu84dM0GQokw_OffHu2Yz'
+function requireEnv(name: string, value: string | undefined) {
+  const resolved = value?.trim()
+  if (!resolved) {
+    throw new Error(`Falta la variable de entorno ${name}. Configúrala antes de iniciar Nexus.`)
+  }
+  return resolved
+}
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim() || fallbackUrl
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() || fallbackPublishableKey
+const supabaseUrl = requireEnv('VITE_SUPABASE_URL', import.meta.env.VITE_SUPABASE_URL)
+const supabaseAnonKey = requireEnv('VITE_SUPABASE_ANON_KEY', import.meta.env.VITE_SUPABASE_ANON_KEY)
 
 export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
