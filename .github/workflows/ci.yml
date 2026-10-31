@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: https://bhxpsfwfvhjlovijlvcs.supabase.co
+      VITE_SUPABASE_ANON_KEY: sb_publishable_lmuGS__TQFJu84dM0GQokw_OffHu2Yz
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,6 +22,8 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Lint
+        run: npm run lint
       - name: Typecheck
         run: npm run typecheck
       - name: Build
