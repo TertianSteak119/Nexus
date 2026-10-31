@@ -149,7 +149,7 @@ export function SignupApplicationPage() {
           <p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--nexus-coral)]">Nexus · solicitud</p>
           <h1 className="mt-4 font-display text-4xl font-bold text-[var(--nexus-navy)]">Solicitud completada</h1>
           <p className="mt-5 leading-7 text-[var(--nexus-muted)]">
-            Tus datos ya fueron enviados para revisión. Si tu correo todavía no está confirmado, aún debes verificarlo antes de poder iniciar sesión normalmente.
+            Tu solicitud ha sido enviada para revisión. Te recomendamos intentar iniciar sesión cada pocas horas hasta que tu solicitud haya sido verificada.
           </p>
           <button
             type="button"
@@ -170,7 +170,7 @@ export function SignupApplicationPage() {
           <p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--nexus-coral)]">Nexus · solicitud de ingreso</p>
           <h1 className="mt-3 font-display text-4xl font-bold text-[var(--nexus-navy)]">Completa tu perfil</h1>
           <p className="mt-3 max-w-2xl leading-7 text-[var(--nexus-muted)]">
-            Puedes llenar esta solicitud aunque tu correo todavía esté pendiente de confirmación. Confirmar el correo no aprueba tu cuenta; la aprobación la realiza un administrador de Nexus.
+            Puedes llenar esta solicitud aunque tu correo todavía esté pendiente de confirmación. Tu cuenta podrá activarse por cualquiera de estas dos vías: confirmando tu correo o mediante la aprobación de un administrador de Nexus.
           </p>
         </div>
 
