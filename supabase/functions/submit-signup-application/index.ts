@@ -172,6 +172,21 @@ Deno.serve(async (req: Request) => {
 
     await admin.auth.admin.updateUserById(userId, { user_metadata: nextMetadata });
 
+    let autoApproved = false;
+
+    if (user.email_confirmed_at) {
+      const { data: approved, error: approvalByEmailError } = await admin.rpc(
+        "approve_completed_account_from_email",
+        { target_user: userId },
+      );
+
+      if (approvalByEmailError) {
+        return json({ error: "EMAIL_APPROVAL_FAILED", detail: approvalByEmailError.message }, 500);
+      }
+
+      autoApproved = Boolean(approved);
+    }
+
     const notifyResponse = await fetch(`${supabaseUrl}/functions/v1/notify-signup`, {
       method: "POST",
       headers: {
@@ -185,6 +200,7 @@ Deno.serve(async (req: Request) => {
       ok: true,
       notification_sent: notifyResponse.ok,
       email_confirmed: Boolean(user.email_confirmed_at),
+      auto_approved: autoApproved,
     });
   } catch (error) {
     return json({
