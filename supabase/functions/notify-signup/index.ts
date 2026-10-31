@@ -190,8 +190,8 @@ Deno.serve(async (req: Request) => {
           ${optionalBio}
           <p><strong>Comprobante:</strong> ${attachments.length ? "Adjunto a este correo" : "Disponible en el panel de administración"}</p>
           <p style="margin-top:24px">
-            <a href="${escapeHtml(approveUrl)}" style="display:inline-block;margin-right:10px;padding:12px 18px;border-radius:10px;background:#047857;color:white;text-decoration:none;font-weight:700">Aprobar cuenta</a>
-            <a href="${escapeHtml(rejectUrl)}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#b91c1c;color:white;text-decoration:none;font-weight:700">Rechazar cuenta</a>
+            <a href="${escapeHtml(approveUrl)}" style="display:inline-block;margin-right:10px;padding:12px 18px;border-radius:10px;background:#047857;color:white;text-decoration:none;font-weight:700">Revisar y aprobar cuenta</a>
+            <a href="${escapeHtml(rejectUrl)}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#b91c1c;color:white;text-decoration:none;font-weight:700">Revisar y rechazar cuenta</a>
           </p>
           <p style="margin-top:24px"><a href="${escapeHtml(appUrl.replace(/\/$/, "") + "/control")}">Abrir panel de administración</a></p>
           <p style="font-size:12px;color:#6b7280">Aprobar la cuenta también valida el comprobante inicial de promedio. Los enlaces vencen en 7 días y requieren confirmación adicional.</p>
