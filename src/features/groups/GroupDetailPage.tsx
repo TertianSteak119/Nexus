@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../auth/useAuth'
@@ -27,7 +27,7 @@ export function GroupDetailPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
-  async function loadGroup() {
+  const loadGroup = useCallback(async () => {
     if (!id || !user) return
     setLoading(true)
 
@@ -89,11 +89,11 @@ export function GroupDetailPage() {
     }
 
     setLoading(false)
-  }
+  }, [id, user])
 
   useEffect(() => {
     void loadGroup()
-  }, [id, user])
+  }, [loadGroup])
 
   useEffect(() => {
     if (!id) return
@@ -108,7 +108,7 @@ export function GroupDetailPage() {
     return () => {
       void supabase.removeChannel(postChannel)
     }
-  }, [id, user])
+  }, [id, loadGroup])
 
   const currentMember = useMemo(() => members.find((member) => member.profile_id === user?.id), [members, user])
   const currentUsername = currentMember?.profiles?.username ?? 'usuario'
