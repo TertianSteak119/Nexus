@@ -114,6 +114,21 @@ export function MessagesPage() {
   }, [loadOverview])
 
   useEffect(() => {
+    if (!user) return
+
+    const requestsChannel = supabase
+      .channel(`chat-requests:${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_requests' }, () => {
+        void loadOverview()
+      })
+      .subscribe()
+
+    return () => {
+      void supabase.removeChannel(requestsChannel)
+    }
+  }, [loadOverview, user])
+
+  useEffect(() => {
     if (!selectedId) {
       setMessages([])
       return
