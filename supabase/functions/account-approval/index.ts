@@ -89,6 +89,16 @@ Deno.serve(async (req) => {
     note: approving ? "Aprobada desde el correo administrativo." : "Rechazada desde el correo administrativo.",
   })
 
+  if (!reviewError && approving) {
+    const { error: confirmError } = await admin.auth.admin.updateUserById(tokenRow.user_id, {
+      email_confirm: true,
+    })
+
+    if (confirmError) {
+      return html(page("Cuenta aprobada con advertencia", "La solicitud fue aprobada, pero no fue posible habilitar el inicio de sesión automáticamente. Revisa la cuenta desde administración."), 500)
+    }
+  }
+
   if (reviewError) {
     if (String(reviewError.message).includes("ACCOUNT_REQUEST_NOT_PENDING")) {
       return html(page("Solicitud ya procesada", "La cuenta ya no se encuentra pendiente de aprobación."))
