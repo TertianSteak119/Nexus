@@ -76,9 +76,9 @@ Deno.serve(async (req) => {
 
   if (req.method === "GET") {
     return html(page(
-      approving ? "Confirmar aprobación" : "Confirmar rechazo",
-      `Vas a ${approving ? "aprobar" : "rechazar"} la solicitud de acceso de ${name}. La acción se realizará únicamente al pulsar el botón.`,
-      { label: approving ? "Sí, aprobar cuenta" : "Sí, rechazar solicitud", token, danger: !approving },
+      approving ? "Falta confirmar la aprobación" : "Falta confirmar el rechazo",
+      `Abriste el enlace desde el correo, pero todavía no se ha ${approving ? "aprobado" : "rechazado"} nada. Para terminar, pulsa el botón de abajo. Vas a ${approving ? "aprobar" : "rechazar"} la solicitud de ${name}.`,
+      { label: approving ? "Confirmar y aprobar cuenta" : "Confirmar y rechazar solicitud", token, danger: !approving },
     ))
   }
 
