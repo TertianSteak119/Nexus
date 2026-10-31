@@ -1,25 +1,26 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { HomePage } from './pages/HomePage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
-import { AuthPage } from './features/auth/AuthPage'
-import { AccountApprovalPage } from './features/auth/AccountApprovalPage'
-import { ResetPasswordPage } from './features/auth/ResetPasswordPage'
-import { SignupApplicationPage } from './features/auth/SignupApplicationPage'
 import { AuthProvider } from './features/auth/AuthContext'
 import { useAuth } from './features/auth/useAuth'
-import { ProfilePage } from './features/profile/ProfilePage'
-import { FeedPage } from './features/feed/FeedPage'
-import { DiscoverPage } from './features/discover/DiscoverPage'
-import { MessagesPage } from './features/messages/MessagesPage'
-import { PublicProfilePage } from './features/profile/PublicProfilePage'
-import { AdminConsolePage } from './features/admin/AdminConsolePage'
-import { RequestsPage } from './features/admin/RequestsPage'
-import { GroupsPage } from './features/groups/GroupsPage'
-import { GroupDetailPage } from './features/groups/GroupDetailPage'
 import { supabase } from './lib/supabase'
+
+const AuthPage = lazy(() => import('./features/auth/AuthPage').then((module) => ({ default: module.AuthPage })))
+const AccountApprovalPage = lazy(() => import('./features/auth/AccountApprovalPage').then((module) => ({ default: module.AccountApprovalPage })))
+const ResetPasswordPage = lazy(() => import('./features/auth/ResetPasswordPage').then((module) => ({ default: module.ResetPasswordPage })))
+const SignupApplicationPage = lazy(() => import('./features/auth/SignupApplicationPage').then((module) => ({ default: module.SignupApplicationPage })))
+const ProfilePage = lazy(() => import('./features/profile/ProfilePage').then((module) => ({ default: module.ProfilePage })))
+const FeedPage = lazy(() => import('./features/feed/FeedPage').then((module) => ({ default: module.FeedPage })))
+const DiscoverPage = lazy(() => import('./features/discover/DiscoverPage').then((module) => ({ default: module.DiscoverPage })))
+const MessagesPage = lazy(() => import('./features/messages/MessagesPage').then((module) => ({ default: module.MessagesPage })))
+const PublicProfilePage = lazy(() => import('./features/profile/PublicProfilePage').then((module) => ({ default: module.PublicProfilePage })))
+const AdminConsolePage = lazy(() => import('./features/admin/AdminConsolePage').then((module) => ({ default: module.AdminConsolePage })))
+const RequestsPage = lazy(() => import('./features/admin/RequestsPage').then((module) => ({ default: module.RequestsPage })))
+const GroupsPage = lazy(() => import('./features/groups/GroupsPage').then((module) => ({ default: module.GroupsPage })))
+const GroupDetailPage = lazy(() => import('./features/groups/GroupDetailPage').then((module) => ({ default: module.GroupDetailPage })))
 
 const queryClient = new QueryClient()
 
@@ -131,8 +132,19 @@ export function NexusApp() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <App />
+        <Suspense fallback={<LoadingScreen />}>
+          <App />
+        </Suspense>
       </AuthProvider>
     </QueryClientProvider>
+  )
+}
+
+
+function LoadingScreen() {
+  return (
+    <div className="grid min-h-screen place-items-center bg-[var(--nexus-paper)] text-sm font-semibold text-[var(--nexus-muted)]">
+      Cargando Nexus...
+    </div>
   )
 }
