@@ -37,6 +37,8 @@ type ChatMessage = {
   created_at: string
 }
 
+type MessagesTab = 'chats' | 'requests'
+
 export function MessagesPage() {
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -48,6 +50,7 @@ export function MessagesPage() {
   const [draft, setDraft] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<MessagesTab>('chats')
 
   const selectedConversation = useMemo(
     () => conversations.find((item) => item.conversation_id === selectedId) ?? null,
@@ -145,6 +148,7 @@ export function MessagesPage() {
     if (status === 'accepted' && data?.conversation_id) {
       setSelectedId(data.conversation_id)
       setSearchParams({ conversation: data.conversation_id })
+      setActiveTab('chats')
     }
   }
 
@@ -189,47 +193,104 @@ export function MessagesPage() {
 
   return (
     <section className="mx-auto max-w-6xl">
-      <div className="mb-7">
-        <h1 className="font-display text-4xl font-bold text-[var(--nexus-navy)]">Conversaciones.</h1>
+      <div className="mb-5">
+        <h1 className="font-display text-4xl font-bold text-[var(--nexus-navy)]">Mensajes</h1>
+        <p className="mt-2 text-sm text-[var(--nexus-muted)]">Administra tus chats y las solicitudes de conversación.</p>
+      </div>
+
+      <div className="mb-5 flex gap-2 rounded-2xl border border-[var(--nexus-line)] bg-white p-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab('chats')}
+          className={`flex-1 rounded-xl px-4 py-3 text-sm font-bold transition ${
+            activeTab === 'chats'
+              ? 'bg-[var(--nexus-navy)] text-white'
+              : 'text-[var(--nexus-muted)] hover:bg-[var(--nexus-mist)]'
+          }`}
+        >
+          Chats
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('requests')}
+          className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition ${
+            activeTab === 'requests'
+              ? 'bg-[var(--nexus-navy)] text-white'
+              : 'text-[var(--nexus-muted)] hover:bg-[var(--nexus-mist)]'
+          }`}
+        >
+          Solicitudes
+          {incoming.length > 0 && (
+            <span className={`min-w-6 rounded-full px-2 py-0.5 text-xs ${
+              activeTab === 'requests' ? 'bg-white text-[var(--nexus-navy)]' : 'bg-[var(--nexus-coral)] text-white'
+            }`}>
+              {incoming.length}
+            </span>
+          )}
+        </button>
       </div>
 
       {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
-      {incoming.length > 0 && (
-        <div className="mb-6 rounded-2xl border border-[var(--nexus-line)] bg-white p-5">
-          <h2 className="font-display text-xl font-bold text-[var(--nexus-navy)]">Solicitudes recibidas</h2>
-          <div className="mt-4 grid gap-3">
-            {incoming.map((request) => {
-              const profile = requestProfiles[request.from_id]
-              return (
-                <div key={request.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[var(--nexus-paper)] p-4">
-                  <div>
-                    <p className="font-bold text-[var(--nexus-navy)]">{profile?.full_name ?? 'Usuario'}</p>
-                    <p className="text-sm text-[var(--nexus-muted)]">@{profile?.username ?? 'perfil'}</p>
+      {activeTab === 'requests' ? (
+        <div className="space-y-5">
+          <section className="rounded-3xl border border-[var(--nexus-line)] bg-white p-5 sm:p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="font-display text-2xl font-bold text-[var(--nexus-navy)]">Solicitudes recibidas</h2>
+                <p className="mt-1 text-sm text-[var(--nexus-muted)]">Acepta una solicitud para habilitar el chat con esa persona.</p>
+              </div>
+              {incoming.length > 0 && (
+                <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-[var(--nexus-coral)]">
+                  {incoming.length} pendiente{incoming.length === 1 ? '' : 's'}
+                </span>
+              )}
+            </div>
+
+            <div className="mt-5 grid gap-3">
+              {incoming.length ? incoming.map((request) => {
+                const profile = requestProfiles[request.from_id]
+                return (
+                  <div key={request.id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-[var(--nexus-paper)] p-4">
+                    <div>
+                      <p className="font-bold text-[var(--nexus-navy)]">{profile?.full_name ?? 'Usuario'}</p>
+                      <p className="text-sm text-[var(--nexus-muted)]">@{profile?.username ?? 'perfil'}</p>
+                      <p className="mt-1 text-xs text-[var(--nexus-muted)]">{new Date(request.created_at).toLocaleString('es-MX')}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => void respond(request.id, 'rejected')} className="rounded-xl border border-[var(--nexus-line)] px-4 py-2 text-sm font-bold text-[var(--nexus-muted)]">
+                        Rechazar
+                      </button>
+                      <button onClick={() => void respond(request.id, 'accepted')} className="rounded-xl bg-[var(--nexus-coral)] px-4 py-2 text-sm font-bold text-white">
+                        Aceptar y abrir chat
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => void respond(request.id, 'rejected')} className="rounded-xl border border-[var(--nexus-line)] px-4 py-2 text-sm font-bold text-[var(--nexus-muted)]">Rechazar</button>
-                    <button onClick={() => void respond(request.id, 'accepted')} className="rounded-xl bg-[var(--nexus-coral)] px-4 py-2 text-sm font-bold text-white">Aceptar</button>
-                  </div>
+                )
+              }) : (
+                <div className="rounded-2xl border border-dashed border-[var(--nexus-line)] p-8 text-center text-sm text-[var(--nexus-muted)]">
+                  No tienes solicitudes de chat pendientes.
                 </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
+              )}
+            </div>
+          </section>
 
-      {outgoing.length > 0 && (
-        <div className="mb-6 rounded-2xl border border-[var(--nexus-line)] bg-white p-5">
-          <h2 className="font-display text-xl font-bold text-[var(--nexus-navy)]">Solicitudes enviadas</h2>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {outgoing.map((request) => {
-              const profile = requestProfiles[request.to_id]
-              return <span key={request.id} className="rounded-full bg-[var(--nexus-mist)] px-3 py-2 text-sm text-[var(--nexus-muted)]">@{profile?.username ?? 'perfil'} · pendiente</span>
-            })}
-          </div>
+          <section className="rounded-3xl border border-[var(--nexus-line)] bg-white p-5 sm:p-6">
+            <h2 className="font-display text-xl font-bold text-[var(--nexus-navy)]">Solicitudes enviadas</h2>
+            <p className="mt-1 text-sm text-[var(--nexus-muted)]">Estas solicitudes están esperando respuesta.</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {outgoing.length ? outgoing.map((request) => {
+                const profile = requestProfiles[request.to_id]
+                return (
+                  <span key={request.id} className="rounded-full bg-[var(--nexus-mist)] px-3 py-2 text-sm text-[var(--nexus-muted)]">
+                    @{profile?.username ?? 'perfil'} · pendiente
+                  </span>
+                )
+              }) : <p className="text-sm text-[var(--nexus-muted)]">No tienes solicitudes enviadas pendientes.</p>}
+            </div>
+          </section>
         </div>
-      )}
-
+      ) : (
       <div className="grid min-h-[560px] overflow-hidden rounded-3xl border border-[var(--nexus-line)] bg-white lg:grid-cols-[320px_1fr]">
         <aside className="border-b border-[var(--nexus-line)] p-4 lg:border-b-0 lg:border-r">
           <h2 className="px-2 font-bold text-[var(--nexus-navy)]">Tus chats</h2>
@@ -285,6 +346,7 @@ export function MessagesPage() {
           )}
         </div>
       </div>
+      )}
     </section>
   )
 }
