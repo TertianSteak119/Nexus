@@ -18,6 +18,7 @@ const DiscoverPage = lazy(() => import('./features/discover/DiscoverPage').then(
 const MessagesPage = lazy(() => import('./features/messages/MessagesPage').then((module) => ({ default: module.MessagesPage })))
 const PublicProfilePage = lazy(() => import('./features/profile/PublicProfilePage').then((module) => ({ default: module.PublicProfilePage })))
 const AdminConsolePage = lazy(() => import('./features/admin/AdminConsolePage').then((module) => ({ default: module.AdminConsolePage })))
+const AdminEmailApprovalPage = lazy(() => import('./features/admin/AdminEmailApprovalPage').then((module) => ({ default: module.AdminEmailApprovalPage })))
 const RequestsPage = lazy(() => import('./features/admin/RequestsPage').then((module) => ({ default: module.RequestsPage })))
 const GroupsPage = lazy(() => import('./features/groups/GroupsPage').then((module) => ({ default: module.GroupsPage })))
 const GroupDetailPage = lazy(() => import('./features/groups/GroupDetailPage').then((module) => ({ default: module.GroupDetailPage })))
@@ -81,6 +82,7 @@ export function App() {
   const pageMode = new URLSearchParams(window.location.search).get('mode')
   const recoveryMode = pageMode === 'recovery'
   const signupApplicationMode = pageMode === 'application'
+  const adminEmailApprovalMode = pageMode === 'admin-email-approval'
 
   if (recoveryMode) {
     return <ResetPasswordPage />
@@ -88,6 +90,10 @@ export function App() {
 
   if (signupApplicationMode) {
     return <SignupApplicationPage />
+  }
+
+  if (adminEmailApprovalMode) {
+    return <AdminEmailApprovalPage />
   }
 
   if (loading || (user && (approvalStatus === null || profileReady === null))) {
