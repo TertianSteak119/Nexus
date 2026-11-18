@@ -24,13 +24,11 @@ export function SignupApplicationPage() {
   const [schoolLevel, setSchoolLevel] = useState<'secundaria' | 'preparatoria' | 'universidad'>('preparatoria')
   const [schoolName, setSchoolName] = useState('')
   const [bio, setBio] = useState('')
-  const [gpa, setGpa] = useState('')
   const [selectedInterests, setSelectedInterests] = useState<string[]>([])
   const [lookingFor, setLookingFor] = useState<LookingKind[]>([])
   const [otherLookingFor, setOtherLookingFor] = useState('')
   const [acceptsRequests, setAcceptsRequests] = useState(true)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
-  const [gradeFile, setGradeFile] = useState<File | null>(null)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -75,11 +73,6 @@ export function SignupApplicationPage() {
       setError('Escribe el nombre de tu escuela.')
       return
     }
-    const numericGpa = Number(gpa)
-    if (!Number.isFinite(numericGpa) || numericGpa < 0 || numericGpa > 10) {
-      setError('Escribe un promedio válido entre 0 y 10.')
-      return
-    }
     if (!selectedInterests.length) {
       setError('Selecciona al menos un interés.')
       return
@@ -92,15 +85,9 @@ export function SignupApplicationPage() {
       setError('Escribe qué buscas en la opción “Otro”.')
       return
     }
-    if (!gradeFile) {
-      setError('Debes subir una foto de tu boleta o comprobante de promedio.')
-      return
-    }
-
     setSubmitting(true)
 
     try {
-      const gradePayload = await fileToPayload(gradeFile)
       const avatarPayload = avatarFile ? await fileToPayload(avatarFile) : null
 
       const { data, error: submitError } = await supabase.functions.invoke('submit-signup-application', {
@@ -114,13 +101,11 @@ export function SignupApplicationPage() {
           school_name: schoolName.trim(),
           bio: bio.trim(),
           accepts_message_requests: acceptsRequests,
-          gpa: numericGpa,
           interests: selectedInterests,
           looking_for: lookingFor.map((kind) => ({
             kind,
             other_text: kind === 'other' ? otherLookingFor.trim() : null,
           })),
-          grade_file: gradePayload,
           avatar_file: avatarPayload,
         },
       })
@@ -170,7 +155,7 @@ export function SignupApplicationPage() {
           <p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--nexus-coral)]">Nexus · solicitud de ingreso</p>
           <h1 className="mt-3 font-display text-4xl font-bold text-[var(--nexus-navy)]">Completa tu perfil</h1>
           <p className="mt-3 max-w-2xl leading-7 text-[var(--nexus-muted)]">
-            Puedes llenar esta solicitud aunque tu correo todavía esté pendiente de confirmación. Tu cuenta podrá activarse por cualquiera de estas dos vías: confirmando tu correo o mediante la aprobación de un administrador de Nexus.
+            Puedes llenar esta solicitud aunque tu correo todavía esté pendiente de confirmación. El promedio escolar y su comprobante son opcionales y se podrán enviar después, desde “Editar información”, para revisión separada por un administrador.
           </p>
         </div>
 
@@ -197,10 +182,6 @@ export function SignupApplicationPage() {
 
           <Field label="Escuela · obligatorio">
             <input required value={schoolName} onChange={(event) => setSchoolName(event.target.value)} className="input" placeholder="Nombre de tu escuela" />
-          </Field>
-
-          <Field label="Promedio escolar · obligatorio">
-            <input required type="number" min="0" max="10" step="0.01" value={gpa} onChange={(event) => setGpa(event.target.value)} className="input" placeholder="0 a 10" />
           </Field>
 
           <Field label="Bio · opcional">
@@ -260,11 +241,6 @@ export function SignupApplicationPage() {
             <input type="checkbox" checked={acceptsRequests} onChange={(event) => setAcceptsRequests(event.target.checked)} className="h-5 w-5 accent-[#315f8c]" />
             Aceptar solicitudes de mensaje cuando mi cuenta sea aprobada
           </label>
-
-          <Field label="Boleta o comprobante de promedio · obligatorio">
-            <input required type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setGradeFile(event.target.files?.[0] ?? null)} className="input" />
-            <span className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">JPG, PNG o WebP · máximo 5 MB. Se mantiene privado.</span>
-          </Field>
 
           {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700 sm:col-span-2">{error}</p>}
 
