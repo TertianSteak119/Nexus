@@ -52,15 +52,11 @@ Deno.serve(async (req: Request) => {
       { data: profile, error: profileError },
       { data: interestRows, error: interestsError },
       { data: lookingRows, error: lookingError },
-      { data: gradeRows, error: gradeError },
     ] = await Promise.all([
-      admin.from("profiles").select("username, full_name, birth_date, school_level, school_name, bio, avatar_path, accepts_message_requests, gpa").eq("id", user_id).maybeSingle(),
+      admin.from("profiles").select("username, full_name, birth_date, school_level, school_name, bio, avatar_path, accepts_message_requests").eq("id", user_id).maybeSingle(),
       admin.from("profile_interests").select("interests(name)").eq("profile_id", user_id),
       admin.from("profile_looking_for").select("kind, other_text").eq("profile_id", user_id),
-      admin.from("grade_verifications").select("id, status, image_path, created_at").eq("profile_id", user_id).order("created_at", { ascending: false }).limit(1),
     ]);
-
-    const latestGrade = gradeRows?.[0] ?? null;
     const interestNames = ((interestRows ?? []) as ProfileInterestRow[])
       .map((row) => {
         const relation = row.interests;
@@ -77,8 +73,8 @@ Deno.serve(async (req: Request) => {
     });
 
     if (
-      profileError || interestsError || lookingError || gradeError ||
-      !profile || profile.gpa == null || !interestNames.length || !lookingFor.length || !latestGrade?.image_path
+      profileError || interestsError || lookingError ||
+      !profile || !interestNames.length || !lookingFor.length
     ) {
       return json({ error: "Profile application is incomplete" }, 409);
     }
@@ -150,19 +146,6 @@ Deno.serve(async (req: Request) => {
     const rejectUrl = `${approvalBase}?token=${encodeURIComponent(rejectToken)}`;
 
     const age = calculateAge(String(profile.birth_date));
-    const attachments: Array<{ filename: string; content: string }> = [];
-
-    const { data: evidenceBlob, error: evidenceError } = await admin.storage
-      .from("boletas")
-      .download(String(latestGrade.image_path));
-
-    if (!evidenceError && evidenceBlob) {
-      attachments.push({
-        filename: `comprobante-${profile.username || "solicitud"}.${fileExtension(String(latestGrade.image_path))}`,
-        content: arrayBufferToBase64(await evidenceBlob.arrayBuffer()),
-      });
-    }
-
     const email = String(user.email ?? "No disponible");
     const optionalBio = profile.bio ? `<p><strong>Bio:</strong> ${escapeHtml(String(profile.bio))}</p>` : "";
     const avatarNote = profile.avatar_path ? "Sí" : "No (opcional)";
@@ -182,24 +165,21 @@ Deno.serve(async (req: Request) => {
           <p><strong>Fecha de nacimiento:</strong> ${escapeHtml(String(profile.birth_date))} · ${age} años</p>
           <p><strong>Nivel escolar:</strong> ${escapeHtml(String(profile.school_level))}</p>
           <p><strong>Escuela:</strong> ${escapeHtml(String(profile.school_name))}</p>
-          <p><strong>Promedio declarado:</strong> ${escapeHtml(String(profile.gpa))}</p>
           <p><strong>Intereses:</strong> ${escapeHtml(interestNames.join(", "))}</p>
           <p><strong>Busca:</strong> ${escapeHtml(lookingFor.join(", "))}</p>
           <p><strong>Recibe solicitudes de mensaje:</strong> ${profile.accepts_message_requests ? "Sí" : "No"}</p>
           <p><strong>Avatar:</strong> ${avatarNote}</p>
           ${optionalBio}
-          <p><strong>Comprobante:</strong> ${attachments.length ? "Adjunto a este correo" : "Disponible en el panel de administración"}</p>
           <p style="margin-top:24px">
             <a href="${escapeHtml(approveUrl)}" style="display:inline-block;margin-right:10px;padding:12px 18px;border-radius:10px;background:#047857;color:white;text-decoration:none;font-weight:700">Revisar y aprobar cuenta</a>
             <a href="${escapeHtml(rejectUrl)}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#b91c1c;color:white;text-decoration:none;font-weight:700">Revisar y rechazar cuenta</a>
           </p>
           <p style="margin-top:24px"><a href="${escapeHtml(appUrl.replace(/\/$/, "") + "/control")}">Abrir panel de administración</a></p>
-          <p style="font-size:12px;color:#6b7280">Aprobar la cuenta también valida el comprobante inicial de promedio. Los enlaces vencen en 7 días y requieren confirmación adicional.</p>
+          <p style="font-size:12px;color:#6b7280">El promedio escolar no forma parte de la aprobación de acceso. Si el usuario decide enviarlo después, aparecerá como una solicitud separada en el panel. Los enlaces vencen en 7 días y requieren confirmación adicional.</p>
         </div>
       `,
     };
 
-    if (attachments.length) payload.attachments = attachments;
 
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -252,21 +232,6 @@ function calculateAge(birthDate: string) {
     (today.getUTCMonth() === birth.getUTCMonth() && today.getUTCDate() < birth.getUTCDate());
   if (beforeBirthday) age -= 1;
   return age;
-}
-
-function fileExtension(path: string) {
-  const extension = path.split(".").pop()?.toLowerCase() ?? "jpg";
-  return ["jpg", "jpeg", "png", "webp"].includes(extension) ? extension : "jpg";
-}
-
-function arrayBufferToBase64(buffer: ArrayBuffer) {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  const chunk = 0x8000;
-  for (let index = 0; index < bytes.length; index += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(index, Math.min(index + chunk, bytes.length)));
-  }
-  return btoa(binary);
 }
 
 function json(body: unknown, status = 200) {
