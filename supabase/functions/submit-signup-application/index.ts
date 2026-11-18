@@ -59,7 +59,6 @@ Deno.serve(async (req: Request) => {
     const schoolName = String(body?.school_name ?? "").trim();
     const bio = String(body?.bio ?? "").trim();
     const acceptsMessageRequests = Boolean(body?.accepts_message_requests);
-    const gpa = Number(body?.gpa);
     const interestIds = Array.isArray(body?.interests)
       ? [...new Set(body.interests.map((value: unknown) => String(value)))]
       : [];
@@ -71,7 +70,6 @@ Deno.serve(async (req: Request) => {
     if (!allowedSchoolLevels.has(schoolLevel)) return json({ error: "INVALID_SCHOOL_LEVEL" }, 400);
     if (schoolName.length < 2 || schoolName.length > 120) return json({ error: "INVALID_SCHOOL_NAME" }, 400);
     if (bio.length > 500) return json({ error: "BIO_TOO_LONG" }, 400);
-    if (!Number.isFinite(gpa) || gpa < 0 || gpa > 10) return json({ error: "INVALID_GPA" }, 400);
     if (!interestIds.length) return json({ error: "INTEREST_REQUIRED" }, 400);
     if (!lookingFor.length) return json({ error: "LOOKING_FOR_REQUIRED" }, 400);
 
@@ -91,9 +89,6 @@ Deno.serve(async (req: Request) => {
       return json({ error: "INVALID_INTERESTS" }, 400);
     }
 
-    const gradeFile = decodeImage(body?.grade_file);
-    if (!gradeFile) return json({ error: "GRADE_EVIDENCE_REQUIRED" }, 400);
-
     const avatarFile = body?.avatar_file ? decodeImage(body.avatar_file) : null;
     if (body?.avatar_file && !avatarFile) return json({ error: "INVALID_AVATAR" }, 400);
 
@@ -108,7 +103,6 @@ Deno.serve(async (req: Request) => {
       accepts_message_requests: acceptsMessageRequests,
       show_groups_public: false,
       show_school_public: true,
-      gpa,
     };
 
     const { error: profileError } = await admin.from("profiles").upsert(profilePayload);
@@ -143,27 +137,6 @@ Deno.serve(async (req: Request) => {
 
       await admin.from("profiles").update({ avatar_path: avatarPath }).eq("id", userId);
     }
-
-    const verificationId = crypto.randomUUID();
-    const gradePath = `${userId}/${verificationId}.${extensionForMime(gradeFile.mime)}`;
-    const { error: gradeUploadError } = await admin.storage
-      .from("boletas")
-      .upload(gradePath, gradeFile.bytes, {
-        upsert: false,
-        contentType: gradeFile.mime,
-      });
-
-    if (gradeUploadError) return json({ error: "GRADE_UPLOAD_FAILED" }, 500);
-
-    const { error: gradeInsertError } = await admin.from("grade_verifications").insert({
-      id: verificationId,
-      profile_id: userId,
-      gpa,
-      image_path: gradePath,
-      status: "pending",
-    });
-
-    if (gradeInsertError) return json({ error: "GRADE_SAVE_FAILED" }, 500);
 
     const nextMetadata = { ...(user.user_metadata ?? {}) };
     delete nextMetadata.application_token_hash;
