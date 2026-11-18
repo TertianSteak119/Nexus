@@ -319,7 +319,7 @@ export function PublicProfilePage() {
               <div className="space-y-4 px-5 py-4 text-sm">
                 {profile.show_school_public && <InfoRow icon="🎓" label="Estudia en" value={profile.school_name} />}
                 <InfoRow icon="📚" label="Nivel" value={capitalize(profile.school_level)} />
-                {profile.gpa !== null && <InfoRow icon="★" label="Promedio" value={`${profile.gpa}${profile.gpa_verified ? ' · verificado' : ''}`} />}
+                {profile.gpa_verified && profile.gpa !== null && <InfoRow icon="★" label="Promedio" value={`${profile.gpa} · verificado`} />}
                 <InfoRow icon="💬" label="Solicitudes de mensaje" value={profile.accepts_message_requests ? 'Disponibles' : 'No disponibles'} />
               </div>
             </section>
