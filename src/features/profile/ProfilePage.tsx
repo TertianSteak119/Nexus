@@ -11,7 +11,6 @@ const profileSchema = z.object({
   schoolLevel: z.enum(['secundaria', 'preparatoria', 'universidad']),
   schoolName: z.string().trim().min(2, 'Escribe tu escuela.').max(120),
   bio: z.string().max(500, 'La bio no puede superar 500 caracteres.'),
-  gpa: z.number().min(0).max(10).nullable(),
 })
 
 const lookingForOptions = [
@@ -60,8 +59,11 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
   const [lookingFor, setLookingFor] = useState<string[]>([])
   const [otherLookingFor, setOtherLookingFor] = useState('')
   const [gpa, setGpa] = useState('')
+  const [gpaVerified, setGpaVerified] = useState(false)
+  const [gradeRequestGpa, setGradeRequestGpa] = useState('')
   const [gradeFile, setGradeFile] = useState<File | null>(null)
-  const [hasGradeVerification, setHasGradeVerification] = useState(false)
+  const [gradeRequestStatus, setGradeRequestStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none')
+  const [submittingGrade, setSubmittingGrade] = useState(false)
   const [blockedProfiles, setBlockedProfiles] = useState<{ id: string; username: string; full_name: string; avatar_path: string | null }[]>([])
   const [ownPosts, setOwnPosts] = useState<ProfilePost[]>([])
   const [ownGroups, setOwnGroups] = useState<ProfileGroup[]>([])
@@ -85,7 +87,7 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
 
       const { data, error: loadError } = await supabase
         .from('profiles')
-        .select('username, full_name, birth_date, school_level, school_name, bio, accepts_message_requests, show_groups_public, show_school_public, avatar_path, gpa')
+        .select('username, full_name, birth_date, school_level, school_name, bio, accepts_message_requests, show_groups_public, show_school_public, avatar_path, gpa, gpa_verified')
         .eq('id', user.id)
         .maybeSingle()
 
@@ -105,6 +107,7 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
         setShowSchoolPublic(Boolean(data.show_school_public))
         setAvatarPath(data.avatar_path)
         setGpa(data.gpa?.toString() ?? '')
+        setGpaVerified(Boolean(data.gpa_verified))
       } else {
         setFullName(String(user.user_metadata?.full_name ?? ''))
       }
@@ -113,7 +116,7 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
         supabase.from('interests').select('id, name').order('name'),
         supabase.from('profile_interests').select('interest_id').eq('profile_id', user.id),
         supabase.from('profile_looking_for').select('kind, other_text').eq('profile_id', user.id),
-        supabase.from('grade_verifications').select('id').eq('profile_id', user.id).limit(1),
+        supabase.from('grade_verifications').select('id, gpa, status, created_at').eq('profile_id', user.id).order('created_at', { ascending: false }).limit(1),
       ] as const
 
       const [interestResult, profileInterestResult, lookingForResult, gradeResult] = await Promise.all(requests)
@@ -126,7 +129,15 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
         setLookingFor(lookingForResult.data.map((item) => item.kind))
         setOtherLookingFor(lookingForResult.data.find((item) => item.kind === 'other')?.other_text ?? '')
       }
-      setHasGradeVerification(Boolean(gradeResult.data?.length))
+      const latestGrade = gradeResult.data?.[0]
+      if (latestGrade) {
+        const nextStatus = latestGrade.status as 'pending' | 'approved' | 'rejected'
+        setGradeRequestStatus(nextStatus)
+        setGradeRequestGpa(nextStatus === 'pending' || nextStatus === 'rejected' ? String(latestGrade.gpa) : '')
+      } else {
+        setGradeRequestStatus('none')
+        setGradeRequestGpa('')
+      }
 
       if (!applicationMode) {
         const [blockedResult, postsResult, groupsResult] = await Promise.all([
@@ -163,15 +174,10 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
       schoolLevel,
       schoolName,
       bio,
-      gpa: gpa ? Number(gpa) : null,
     })
 
     if (!result.success) {
       setError(result.error.issues[0]?.message ?? 'Revisa los datos.')
-      return
-    }
-    if (result.data.gpa === null) {
-      setError('El promedio escolar es obligatorio para completar tu perfil.')
       return
     }
     if (!selectedInterests.length) {
@@ -184,10 +190,6 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
     }
     if (lookingFor.includes('other') && !otherLookingFor.trim()) {
       setError('Escribe qué buscas en la opción “Otro”.')
-      return
-    }
-    if (!hasGradeVerification && !gradeFile) {
-      setError('Debes subir una foto de tu boleta o comprobante de promedio.')
       return
     }
 
@@ -212,7 +214,6 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
       accepts_message_requests: acceptsRequests,
       show_groups_public: showGroupsPublic,
       show_school_public: showSchoolPublic,
-      gpa: result.data.gpa,
     })
 
     if (saveError) {
@@ -267,39 +268,6 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
       return
     }
 
-    if (gradeFile) {
-      const extension = gradeFile.name.split('.').pop()?.toLowerCase() ?? 'jpg'
-      if (!['jpg', 'jpeg', 'png', 'webp'].includes(extension) || gradeFile.size > 5 * 1024 * 1024) {
-        setError('La boleta debe ser JPG, PNG o WebP y pesar máximo 5 MB.')
-        return
-      }
-
-      const verificationId = crypto.randomUUID()
-      const path = `${user.id}/${verificationId}.${extension}`
-      const { error: uploadError } = await supabase.storage.from('boletas').upload(path, gradeFile, { contentType: gradeFile.type })
-
-      if (uploadError) {
-        setError(uploadError.message)
-        return
-      }
-
-      const { error: verificationError } = await supabase.from('grade_verifications').insert({
-        id: verificationId,
-        profile_id: user.id,
-        gpa: result.data.gpa,
-        image_path: path,
-        status: 'pending',
-      })
-
-      if (verificationError) {
-        setError(verificationError.message)
-        return
-      }
-
-      setGradeFile(null)
-      setHasGradeVerification(true)
-    }
-
     if (applicationMode) {
       const { error: notifyError } = await supabase.functions.invoke('notify-signup', {
         body: { user_id: user.id },
@@ -315,6 +283,72 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
       setFeedback('Información actualizada correctamente.')
       setActiveTab('profile')
     }
+  }
+
+  async function submitGradeVerification(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError('')
+    setFeedback('')
+
+    if (!user) {
+      setError('No fue posible enviar la solicitud de promedio.')
+      return
+    }
+
+    if (gradeRequestStatus === 'pending') {
+      setError('Ya tienes una solicitud de promedio pendiente de revisión.')
+      return
+    }
+
+    const numericGpa = Number(gradeRequestGpa)
+    if (!Number.isFinite(numericGpa) || numericGpa < 0 || numericGpa > 10) {
+      setError('Escribe un promedio válido entre 0 y 10.')
+      return
+    }
+
+    if (!gradeFile) {
+      setError('Debes seleccionar una foto de tu boleta o comprobante.')
+      return
+    }
+
+    const extension = gradeFile.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+    if (!['jpg', 'jpeg', 'png', 'webp'].includes(extension) || gradeFile.size > 5 * 1024 * 1024) {
+      setError('La boleta debe ser JPG, PNG o WebP y pesar máximo 5 MB.')
+      return
+    }
+
+    setSubmittingGrade(true)
+
+    const verificationId = crypto.randomUUID()
+    const path = `${user.id}/${verificationId}.${extension}`
+    const { error: uploadError } = await supabase.storage
+      .from('boletas')
+      .upload(path, gradeFile, { contentType: gradeFile.type })
+
+    if (uploadError) {
+      setSubmittingGrade(false)
+      setError(uploadError.message)
+      return
+    }
+
+    const { error: verificationError } = await supabase.from('grade_verifications').insert({
+      id: verificationId,
+      profile_id: user.id,
+      gpa: numericGpa,
+      image_path: path,
+      status: 'pending',
+    })
+
+    setSubmittingGrade(false)
+
+    if (verificationError) {
+      setError(verificationError.message)
+      return
+    }
+
+    setGradeFile(null)
+    setGradeRequestStatus('pending')
+    setFeedback('Promedio enviado para revisión. Un administrador deberá aprobarlo antes de que aparezca como verificado.')
   }
 
   async function savePrivacy() {
@@ -389,6 +423,7 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
           schoolName={schoolName}
           schoolLevel={schoolLevel}
           gpa={gpa}
+          gpaVerified={gpaVerified}
           activeTab={activeTab}
           onTabChange={setActiveTab}
           onSignOut={() => void signOut()}
@@ -413,11 +448,68 @@ export function ProfilePage({ applicationMode = false }: { applicationMode?: boo
           <Field label="Escuela · obligatorio"><input required value={schoolName} onChange={(event) => setSchoolName(event.target.value)} className="input" placeholder="Nombre de tu escuela" /></Field>
           <Field label="Bio · opcional"><textarea value={bio} onChange={(event) => setBio(event.target.value)} className="input min-h-28 resize-y" placeholder="Qué te interesa compartir..." /></Field>
           <Field label="Avatar · opcional"><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setAvatarFile(event.target.files?.[0] ?? null)} className="input file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--nexus-mist)] file:px-3 file:py-2" />{avatarPath && <span className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">Avatar guardado</span>}</Field>
-          <Field label="Promedio escolar · obligatorio"><input value={gpa} onChange={(event) => setGpa(event.target.value)} type="number" min="0" max="10" step="0.01" required className="input" placeholder="0 a 10" /></Field>
           <fieldset className="sm:col-span-2"><legend className="text-sm font-semibold text-[var(--nexus-ink)]">¿Qué buscas? · obligatorio</legend><div className="mt-2 grid gap-2 sm:grid-cols-2">{lookingForOptions.map((option) => <label key={option.value} className="flex items-center gap-3 text-sm text-[var(--nexus-muted)]"><input type="checkbox" checked={lookingFor.includes(option.value)} onChange={(event) => setLookingFor((current) => event.target.checked ? [...current, option.value] : current.filter((value) => value !== option.value))} className="h-4 w-4 accent-[var(--nexus-coral)]" />{option.label}</label>)}</div>{lookingFor.includes('other') && <input value={otherLookingFor} onChange={(event) => setOtherLookingFor(event.target.value)} className="input" placeholder="Cuéntanos qué buscas" />}</fieldset>
           <fieldset className="sm:col-span-2"><legend className="text-sm font-semibold text-[var(--nexus-ink)]">Intereses · obligatorio</legend><div className="mt-2 flex flex-wrap gap-2">{interests.length ? interests.map((interest) => <label key={interest.id} className={`cursor-pointer rounded-full border px-3 py-2 text-sm ${selectedInterests.includes(interest.id) ? 'border-[var(--nexus-coral)] bg-orange-50 text-[var(--nexus-coral)]' : 'border-[var(--nexus-line)] text-[var(--nexus-muted)]'}`}><input type="checkbox" className="sr-only" checked={selectedInterests.includes(interest.id)} onChange={(event) => setSelectedInterests((current) => event.target.checked ? [...current, interest.id] : current.filter((id) => id !== interest.id))} />{interest.name}</label>) : <p className="text-sm text-[var(--nexus-muted)]">Aún no hay intereses configurados.</p>}</div></fieldset>
-          <Field label="Foto de boleta/comprobante · obligatorio"><input type="file" accept="image/jpeg,image/png,image/webp" required={!hasGradeVerification} onChange={(event) => setGradeFile(event.target.files?.[0] ?? null)} className="input file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--nexus-mist)] file:px-3 file:py-2" /><span className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">{hasGradeVerification ? 'Comprobante ya enviado. Puedes subir uno nuevo si deseas actualizarlo.' : 'Debes subirlo para completar el acceso. Tu comprobante se mantiene privado.'}</span></Field>
           <button className="rounded-xl bg-[var(--nexus-coral)] px-4 py-3 font-bold text-white hover:bg-[#d95a42] sm:col-span-2">{applicationMode ? 'Enviar solicitud de ingreso' : 'Guardar información'}</button>
+        </form>
+      )}
+
+      {!applicationMode && activeTab === 'edit' && (
+        <form onSubmit={submitGradeVerification} className="mt-5 grid gap-5 rounded-2xl border border-[var(--nexus-line)] bg-white p-6 shadow-sm sm:grid-cols-2 sm:p-8">
+          <div className="sm:col-span-2">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="font-display text-2xl font-bold text-[var(--nexus-navy)]">Promedio escolar · opcional</h2>
+                <p className="mt-1 text-sm leading-6 text-[var(--nexus-muted)]">
+                  El promedio no es necesario para usar Nexus. Si deseas mostrarlo como verificado, envía el promedio junto con una foto de tu boleta; un administrador revisará la solicitud.
+                </p>
+              </div>
+              {gpaVerified && gpa && (
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
+                  Verificado: {gpa}
+                </span>
+              )}
+            </div>
+            {gradeRequestStatus === 'pending' && (
+              <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-700">
+                Tu solicitud de promedio está pendiente de revisión.
+              </p>
+            )}
+            {gradeRequestStatus === 'rejected' && (
+              <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">
+                La última solicitud fue rechazada. Puedes corregir el promedio o comprobante y enviarla nuevamente.
+              </p>
+            )}
+          </div>
+          <Field label="Promedio a verificar">
+            <input
+              value={gradeRequestGpa}
+              onChange={(event) => setGradeRequestGpa(event.target.value)}
+              type="number"
+              min="0"
+              max="10"
+              step="0.01"
+              disabled={gradeRequestStatus === 'pending'}
+              className="input"
+              placeholder="0 a 10"
+            />
+          </Field>
+          <Field label="Foto de boleta/comprobante">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={gradeRequestStatus === 'pending'}
+              onChange={(event) => setGradeFile(event.target.files?.[0] ?? null)}
+              className="input file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--nexus-mist)] file:px-3 file:py-2"
+            />
+            <span className="mt-2 block text-xs font-normal text-[var(--nexus-muted)]">JPG, PNG o WebP · máximo 5 MB. El comprobante se mantiene privado.</span>
+          </Field>
+          <button
+            disabled={submittingGrade || gradeRequestStatus === 'pending'}
+            className="rounded-xl bg-[var(--nexus-navy)] px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2"
+          >
+            {submittingGrade ? 'Enviando...' : gradeRequestStatus === 'pending' ? 'Pendiente de revisión' : 'Enviar promedio para revisión'}
+          </button>
         </form>
       )}
 
@@ -530,6 +622,7 @@ function ProfileHeader({
   schoolName,
   schoolLevel,
   gpa,
+  gpaVerified,
   activeTab,
   onTabChange,
   onSignOut,
@@ -540,6 +633,7 @@ function ProfileHeader({
   schoolName: string
   schoolLevel: string
   gpa: string
+  gpaVerified: boolean
   activeTab: ProfileTab
   onTabChange: (tab: ProfileTab) => void
   onSignOut: () => void
@@ -565,7 +659,7 @@ function ProfileHeader({
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-[var(--nexus-muted)]">
                 {schoolName && <span>🎓 {schoolName}</span>}
                 <span className="capitalize">📚 {schoolLevel}</span>
-                {gpa && <span>★ Promedio {gpa}</span>}
+                {gpa && gpaVerified && <span>★ Promedio {gpa}</span>}
               </div>
             </div>
           </div>
